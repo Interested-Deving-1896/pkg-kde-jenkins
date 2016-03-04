@@ -1,0 +1,32 @@
+- job-template:
+    name: '{name}-build-flow'
+    project-type: flow
+    dsl: |
+        build("{name}-source")
+        build("{name}-binary")
+    builders:
+    - shell: echo "Build"
+
+- job-template:
+    name: '{name}-test-flow'
+    project-type: flow
+    dsl: |
+        build("{name}-tests")
+    builders:
+    - shell: echo "Tests"
+
+- job-group:
+    name: '{name}-build'
+    jobs:
+    - '{name}-build-flow'
+
+- job-group:
+    name: '{name}-test'
+    jobs:
+    - '{name}-test-flow'
+
+- project:
+    name: extra-cmake-modules
+    jobs:
+        - '{name}-build'
+        - '{name}-test'

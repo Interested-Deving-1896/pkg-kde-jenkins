@@ -1,0 +1,109 @@
+- scm:
+    name: kf-git
+    scm:
+        - git:
+            url: https://anonscm.debian.org/git/pkg-kde/frameworks/{name}.git
+
+- builder:
+    name: success
+    builders:
+        - shell: 'true'
+
+- job-template:
+    name: '{kf_part}-prepare'
+    buiders:
+        - success
+
+- job-template:
+    name: '{kf_part}-build'
+    buiders:
+        - success
+
+- job-template:
+    name: '{kf_part}-test'
+    buiders:
+        - success
+
+- job-template:
+    name: '{kf_part}-upload'
+    buiders:
+        - success
+
+- project:
+    name: kde-frameworks
+    kf_part:
+        - attica
+        - baloo
+        - bluez-qt
+        - breeze-icons
+        - extra-cmake-modules
+        - frameworkintegration
+        - kactivities
+        - kapidox
+        - karchive
+        - kauth
+        - kbookmarks
+        - kcmutils
+        - kcodecs
+        - kcompletion
+        - kconfig
+        - kconfigwidgets
+        - kcoreaddons
+        - kcrash
+        - kdbusaddons
+        - kdeclarative
+        - kded
+        - kdelibs4support
+        - kdesignerplugin
+        - kdesu
+        - kdewebkit
+        - kdnssd
+        - kdoctools
+        - kemoticons
+        - kfilemetadata
+        - kglobalaccel
+        - kguiaddons
+        - khtml
+        - ki18n
+        - kiconthemes
+        - kidletime
+        - kimageformats
+        - kinit
+        - kio
+        - kitemmodels
+        - kitemviews
+        - kjobwidgets
+        - kjs
+        - kjsembed
+        - kmediaplayer
+        - knewstuff
+        - knotifications
+        - knotifyconfig
+        - kpackage
+        - kparts
+        - kpeople
+        - kplotting
+        - kpty
+        - kross
+        - krunner
+        - kservice
+        - ktexteditor
+        - ktextwidgets
+        - kunitconversion
+        - kwallet
+        - kwidgetsaddons
+        - kwindowsystem
+        - kxmlgui
+        - kxmlrpcclient
+        - modemmanager-qt
+        - networkmanager-qt
+        - oxygen-icons5
+        - plasma-framework
+        - solid
+        - sonnet
+        - threadweaver
+    jobs:
+        - '{kf_part}-prepare'
+        - '{kf_part}-build'
+        - '{kf_part}-test'
+        - '{kf_part}-upload'

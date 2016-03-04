@@ -1,0 +1,170 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <logRotator class="hudson.tasks.LogRotator">
+    <daysToKeep>7</daysToKeep>
+    <numToKeep>-1</numToKeep>
+    <artifactDaysToKeep>-1</artifactDaysToKeep>
+    <artifactNumToKeep>-1</artifactNumToKeep>
+  </logRotator>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@2.2.12">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <name>git_debian</name>
+        <url>https://anonscm.debian.org/git/pkg-kde/frameworks/extra-cmake-modules.git</url>
+      </hudson.plugins.git.UserRemoteConfig>
+      <hudson.plugins.git.UserRemoteConfig>
+        <name>git_kde</name>
+        <url>git://anongit.kde.org/extra-cmake-modules.git</url>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>refs/remotes/git_debian/master</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="list"/>
+    <extensions>
+      <hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
+        <relativeTargetDir>repo</relativeTargetDir>
+      </hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
+      <hudson.plugins.git.extensions.impl.CleanCheckout/>
+      <hudson.plugins.git.extensions.impl.LocalBranch>
+        <localBranch>master</localBranch>
+      </hudson.plugins.git.extensions.impl.LocalBranch>
+    </extensions>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <hudson.triggers.SCMTrigger>
+      <spec>H H * * *</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>echo &quot;Clean build directory&quot;
+
+export_dir=build
+
+rm -rf ${export_dir}
+</command>
+    </hudson.tasks.Shell>
+    <hudson.tasks.Shell>
+      <command>echo &quot;Prepare source package&quot;
+cd repo
+export_dir=../build
+gbp buildpackage --git-verbose --git-upstream-branch=git_kde/master --git-upstream-tag=&quot;v%(version)s&quot; --git-export-dir=&quot;${export_dir}&quot; --git-overlay -S -us -uc
+</command>
+    </hudson.tasks.Shell>
+    <hudson.tasks.Shell>
+      <command>echo &quot;Build binaries (arch &amp; all)&quot;
+
+cd repo
+export_dir=../build
+
+source_name=$(dpkg-parsechangelog -S source)
+version=$(dpkg-parsechangelog -S version)
+epochless_version=${version##*:}
+
+distribution=$(dpkg-parsechangelog -S distribution | tr &apos;[:upper:]&apos; &apos;[:lower:]&apos;)
+arch=$(dpkg-architecture -qDEB_HOST_ARCH)
+
+cd &quot;${export_dir}&quot;
+
+dsc_file=&quot;${source_name}_${epochless_version}.dsc&quot;
+chroot=&quot;${distribution}-${arch}-sbuild&quot;
+
+sbuild --dist=&quot;$distribution&quot; --arch=&quot;$arch&quot; --chroot=&quot;$chroot&quot; --arch-all --verbose ${dsc_file}
+</command>
+    </hudson.tasks.Shell>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash
+
+echo &quot;Run Lintian&quot;
+
+cd repo
+version=$(dpkg-parsechangelog -S version)
+epochless_version=${version##*:}
+source_name=$(dpkg-parsechangelog -S source)
+export_dir=&quot;../build&quot;
+source_changes=&quot;${export_dir}/${source_name}_${epochless_version}_source.changes&quot;
+arch=$(dpkg-architecture -qDEB_HOST_ARCH)
+arch_changes=&quot;${export_dir}/${source_name}_${epochless_version}_${arch}.changes&quot;
+
+(lintian -I --pedantic --show-overrides &quot;${source_changes}&quot;; lintian -I --pedantic --show-overrides &quot;${arch_changes}&quot;) 2&gt;&amp;1 | \
+   tee &quot;${export_dir}/lintian.log&quot; | lintian2junit.py -o &quot;${export_dir}/lintian.xml&quot;;
+</command>
+    </hudson.tasks.Shell>
+    <hudson.tasks.Shell>
+      <command>echo &quot;Combine changes file&quot;
+
+cd repo
+version=$(dpkg-parsechangelog -S version)
+epochless_version=${version##*:}
+source_name=$(dpkg-parsechangelog -S source)
+export_dir=../build
+source_changes=&quot;${source_name}_${epochless_version}_source.changes&quot;
+arch=$(dpkg-architecture -qDEB_HOST_ARCH)
+arch_changes=&quot;${source_name}_${epochless_version}_${arch}.changes&quot;
+cd &quot;${export_dir}&quot;
+mergechanges -f  &quot;${source_changes}&quot; &quot;${arch_changes}&quot;
+# Fix permissions
+find -maxdepth 1 -type f -exec chmod 0644 &apos;{}&apos; &apos;+&apos;
+</command>
+    </hudson.tasks.Shell>
+    <hudson.tasks.Shell>
+      <command>echo &quot;Run autopkgtests&quot;
+
+cd repo
+version=$(dpkg-parsechangelog -S version)
+epochless_version=${version##*:}
+
+source_name=$(dpkg-parsechangelog -S source)
+export_dir=../build
+multi_changes=&quot;${export_dir}/${source_name}_${epochless_version}_multi.changes&quot;
+
+distribution=$(dpkg-parsechangelog -S distribution | tr &apos;[:upper:]&apos; &apos;[:lower:]&apos;)
+arch=$(dpkg-architecture -qDEB_HOST_ARCH)
+
+adt-run -U &quot;${multi_changes}&quot; --output-dir=&quot;${export_dir}/adt.artifacts&quot; --- lxc -s &quot;adt-${distribution}-${arch}&quot;
+
+adt2junit.py -o &quot;${export_dir}/adt.xml&quot; &quot;${export_dir}/adt.artifacts/log&quot;
+</command>
+    </hudson.tasks.Shell>
+    <hudson.tasks.Shell>
+      <command>echo &quot;Local upload&quot;
+
+cd repo
+version=$(dpkg-parsechangelog -S version)
+epochless_version=${version##*:}
+source_name=$(dpkg-parsechangelog -S source)
+export_dir=../build
+cd &quot;${export_dir}&quot;
+dput -u local &quot;${source_name}_${epochless_version}_multi.changes&quot;
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.tasks.ArtifactArchiver>
+      <artifacts>build/**</artifacts>
+      <latestOnly>false</latestOnly>
+      <allowEmptyArchive>false</allowEmptyArchive>
+    </hudson.tasks.ArtifactArchiver>
+    <hudson.tasks.junit.JUnitResultArchiver>
+      <testResults>build/*.xml</testResults>
+      <keepLongStdio>false</keepLongStdio>
+      <testDataPublishers/>
+    </hudson.tasks.junit.JUnitResultArchiver>
+  </publishers>
+  <buildWrappers/>
+</project>

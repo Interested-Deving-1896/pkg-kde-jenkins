@@ -1,0 +1,192 @@
+- project:
+    name: kde-frameworks
+    item:
+        - extra-cmake-modules:
+            description: 'Extra modules and scripts for CMake'
+            build_dependencies:
+            test_dependencies:
+        - kio:
+            description: 'Resource and network access abstraction'
+            build_dependencies:
+                - extra-cmake-modules_publish
+            test_dependencies:
+    jobs:
+        - 'kde-frameworks-{item}'
+
+- project:
+    name: kde-plasma
+    item:
+        - kscreen:
+            description: 'KDE monitor hotplug and screen handling'
+            build_dependencies:
+                - extra-cmake-modules_publish
+            test_dependencies:
+        - kwin:
+            description: 'KDE window manager'
+            build_dependencies:
+                - extra-cmake-modules_publish
+                - kscreen_publish
+            test_dependencies:
+    jobs:
+        - 'kde-plasma-{item}'
+
+- project:
+    name: kde-applications
+    item:
+        - kate:
+            description: 'powerful text editor'
+            build_dependencies:
+                - extra-cmake-modules_publish
+                - kwin_publish
+            test_dependencies:
+        - kdenlive:
+            description: 'non-linear video editor'
+            build_dependencies:
+                - extra-cmake-modules_publish
+            test_dependencies:
+    jobs:
+        - 'kde-applications-{item}'
+
+- job-group:
+    name: 'kde-frameworks-{item}'
+    arch:
+        - amd64
+        - i386
+        - armhf
+        - armel
+    jobs:
+        - '{item}_prepare'
+        - '{item}_build_{arch}'
+        - '{item}_publish'
+        - '{item}_test':
+            dependencies: '{obj:test_dependencies}'
+    workspace: '/srv/jenkins/kde/frameworks/{item}'
+    dependencies: '{obj:build_dependencies}'
+    description: '{description}'
+
+- job-group:
+    name: 'kde-plasma-{item}'
+    arch:
+        - amd64
+        - i386
+        - armhf
+        - armel
+    jobs:
+        - '{item}_prepare'
+        - '{item}_build_{arch}'
+        - '{item}_publish'
+        - '{item}_test':
+            dependencies: '{obj:test_dependencies}'
+    workspace: '/srv/jenkins/kde/plasma/{item}'
+    dependencies: '{obj:build_dependencies}'
+    description: '{description}'
+
+- job-group:
+    name: 'kde-applications-{item}'
+    arch:
+        - amd64
+        - i386
+        - armhf
+        - armel
+    jobs:
+        - '{item}_prepare'
+        - '{item}_build_{arch}'
+        - '{item}_publish'
+        - '{item}_test':
+            dependencies: '{obj:test_dependencies}'
+    workspace: '/srv/jenkins/kde/applications/{item}'
+    dependencies: '{obj:build_dependencies}'
+    description: '{description}'
+
+- defaults:
+    name: global
+    quiet-period: 5
+    block-downstream: false
+    block-upstream: true
+    retry-count: 3
+    logrotate:
+        daystokeep: 7
+
+- job-template:
+    name: '{item}_prepare'
+    description: '{description} -- Prepare'
+    workspace: '{workspace}'
+    publishers:
+        - trigger:
+            project: '{item}_build_amd64'
+            threshold: UNSTABLE
+        - trigger:
+            project: '{item}_build_i386'
+            threshold: UNSTABLE
+        - trigger:
+            project: '{item}_build_armhf'
+            threshold: UNSTABLE
+        - trigger:
+            project: '{item}_build_armel'
+            threshold: UNSTABLE
+
+- job-template:
+    name: '{item}_build'
+    # Needs the Matrix Project Plugin
+    project-type: matrix
+    axes:
+        - axis: 
+    description: '{description} -- Build for {arch}'
+    workspace: '{workspace}'
+    node: '{arch}'
+    triggers:
+        - reverse:
+            jobs: '{obj:dependencies}'
+            result: 'unstable'
+    publishers:
+        # Needs the Flexible Publish Plugin
+        - conditional-publisher:
+            - condition-kind: regexp
+              condition-expression: ^amd64$
+              condition-searchtext: '{arch}'
+              action:
+                  - trigger:
+                      project: '{item}_test'
+                      threshold: UNSTABLE
+
+- job-template:
+    name: '{item}_build_{arch}'
+    description: '{description} -- Build for {arch}'
+    workspace: '{workspace}'
+    node: '{arch}'
+    triggers:
+        - reverse:
+            jobs: '{obj:dependencies}'
+            result: 'unstable'
+    publishers:
+        # Needs the Flexible Publish Plugin
+        - conditional-publisher:
+            - condition-kind: regexp
+              condition-expression: ^amd64$
+              condition-searchtext: '{arch}'
+              action:
+                  - trigger:
+                      project: '{item}_test'
+                      threshold: UNSTABLE
+
+- job-template:
+    name: '{item}_publish'
+    description: '{description} -- Publish'
+    workspace: '{workspace}'
+    triggers:
+        - reverse:
+            jobs:
+                - '{item}_build_amd64'
+                - '{item}_build_i386'
+                - '{item}_build_armhf'
+                - '{item}_build_armel'
+            result: unstable
+
+- job-template:
+    name: '{item}_test'
+    description: '{description} -- Test'
+    workspace: '{workspace}'
+    triggers:
+        - reverse:
+            jobs: '{obj:dependencies}'
+            result: 'unstable'

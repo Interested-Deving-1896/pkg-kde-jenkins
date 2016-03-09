@@ -5,4 +5,4 @@ if [[ ! -e out ]]; then
 fi
 rm -f out/*
 
-jenkins-job-builder --conf jjb.ini -r jobs -o out
+jenkins-job-builder --conf jjb.ini test -r jobs -o out

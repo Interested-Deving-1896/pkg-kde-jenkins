@@ -8,12 +8,67 @@ Optionally it will generate projects from the directories hierachy.
 '''
 
 import argparse
+import collections
 import os
 import sys
 
 import debian.deb822 as deb822
 import yaml
 
+
+DebianVcs = collections.namedtuple('DebianVcs', ['type', 'uri', 'branch'])
+
+
+class Tree(object):
+
+    ''' Group packages by directories hierachies '''
+
+    def __init__(self, path=None):
+        if not path:
+            path = ()
+        self.path = path
+        self.subtrees = {}
+        self.values = {}
+
+    def add(self, parents, package):
+        if not parents:
+            self.values[package.name] = package
+            return
+        head, tail = parents[:1], parents[1:]
+        subtree = self.subtrees.setdefault(head, Tree(head))
+        subtree.add(tail, package)
+
+    def compress(self):
+        new_subs = {}
+        for key, subtree in self.subtrees.items():
+            new_sub = subtree.compress()
+            new_subs[new_sub.path] = new_sub
+        if len(new_subs) == 1 and not self.values:
+            key, sub = new_subs.popitem()
+            sub.path = self.path + sub.path
+            return sub
+        else:
+            self.subtrees = new_subs
+        return self
+
+    def __str__(self):
+        return "{{Tree path: {}, subtrees: {}, values: {}}}".format(
+            self.path, self.subtrees, self.values)
+
+
+def group_packages(packages):
+    ''' Group packages by directories hierarchies '''
+
+    tree = Tree()
+
+    for package in packages:
+        dirs = tuple(package.path.lstrip(os.path.sep).split(os.path.sep))
+        tree.add(dirs[:-1], package)
+        print(tree)
+    tree = tree.compress()
+    print(tree)
+
+    return tree
 
 class Package(object):
 
@@ -24,6 +79,10 @@ class Package(object):
 
         assert(os.path.isdir(path))
         self.path = path
+
+    @property
+    def name(self):
+        return os.path.split(self.path)[-1]
 
     @property
     def control(self):
@@ -57,17 +116,18 @@ class Package(object):
     def vcs(self):
         ''' Vcs uri '''
         control = next(self.control)
-        for vcs_key in ['Git', 'Svn', 'Arch', 'Bzr', 'Cvs', 'Darcs', 'Hg', 'Mtn']:
-            key = 'Vcs-{}'.format(vcs_key)
+        for vcs_type in ['Git', 'Svn', 'Arch', 'Bzr', 'Cvs', 'Darcs', 'Hg', 'Mtn']:
+            key = 'Vcs-{}'.format(vcs_type)
             if key in control:
-                vcs = control[key]
-                if vcs_key == 'Git':
+                uri = control[key]
+                branch = None
+                if vcs_type == 'Git':
                     # Handle -b for branch
-                    parts = vcs.rsplit('-b', 2)
+                    parts = uri.rsplit('-b', 2)
                     if len(parts) == 2:
-                        self.branch = parts[1].strip()
-                    vcs = parts[0].strip()
-                return vcs
+                        branch = parts[1].strip()
+                    uri = parts[0].strip()
+                return DebianVcs(vcs_type, uri, branch)
 
     @property
     def upstream_name(self):
@@ -106,13 +166,17 @@ class Package(object):
         control = next(self.control)
         return control.get('Homepage')
 
+    def __repr__(self):
+        return '(Package path:{} )'.format(self.path)
+
     def __str__(self):
         return self.path
 
 
 def obtain_packages(dirs):
     full_dirs = (os.path.abspath(d) for d in dirs)
-    return list(full_dirs)
+    packages = (Package(d) for d in full_dirs)
+    return list(packages)
 
 
 def dump_packages(packages, output):
@@ -129,6 +193,8 @@ def main():
     args = argparser.parse_args()
 
     packages = obtain_packages(args.package_directory)
+    print(packages)
+    group_tree = group_packages(packages)
     dump_packages(packages, args.output)
 
 

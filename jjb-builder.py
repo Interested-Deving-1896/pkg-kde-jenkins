@@ -10,6 +10,7 @@ Optionally it will generate projects from the directories hierachy.
 import argparse
 import collections
 import os
+import re
 import sys
 
 import debian.deb822 as deb822
@@ -89,13 +90,96 @@ class Package(object):
         control_file = os.path.join(self.path, 'debian/control')
 
         with open(control_file) as f:
-            return deb822.Deb822.iter_paragraphs(f)
+            return list(deb822.Deb822.iter_paragraphs(f))
+
+    @property
+    def tests_control(self):
+        control_file = os.path.join(self.path, 'debian/tests/control')
+
+        if not os.path.isfile(control_file):
+            # No tests
+            return []
+
+        with open(control_file) as f:
+            return list(deb822.Deb822.iter_paragraphs(f))
 
     @property
     def copyright(self):
         copyright_filename = os.path.join(self.path, 'debian/copyright')
         with open(copyright_filename) as f:
-            return deb822.Deb822.iter_paragraphs(f)
+            return list(deb822.Deb822.iter_paragraphs(f))
+
+    @property
+    def build_depends(self):
+        build_deps = []
+        source_control = self.control[0]
+        build_deps.append(source_control.get('Build-Depends'))
+        build_deps.append(source_control.get('Build-Depends-Indep'))
+        return ', '.join(x for x in build_deps if x)
+
+    @property
+    def runtime_depends(self):
+        deps = []
+        binary_controls = self.control[1:]
+        for binary_control in binary_controls:
+            deps.append(binary_control.get('Depends'))
+        return ', '.join(x for x in deps if x)
+
+    @property
+    def recommends(self):
+        deps = []
+        binary_controls = self.control[1:]
+        for binary_control in binary_controls:
+            deps.append(binary_control.get('Recommends'))
+        return ', '.join(x for x in deps if x)
+
+    @property
+    def tests_depends(self):
+        tests_deps = []
+        additionals = set()
+        for test in self.tests_control:
+            depends = test.get('Depends', '')
+            depends_list = re.split(r'\s*,\s*', depends)
+            if '@' in depends_list:
+                depends_list.remove('@')
+                additionals.add('runtime')
+            if '@builddeps@' in depends_list:
+                depends_list.remove('@builddeps@')
+                additionals.add('build')
+            restrictions = test.get('Restrictions', '')
+            restrictions_list = re.split(r'\s*,\s*', restrictions)
+            if 'needs-recommends' in restrictions_list:
+                additionals.add('recommends')
+            tests_deps.extend(depends_list)
+        if 'runtime' in additionals:
+            tests_deps.append(self.runtime_depends)
+            if 'recommends' in additionals:
+                tests_deps.append(self.recommends)
+        if 'build' in additionals:
+            tests_deps.append(self.build_depends)
+
+        return ', '.join(x for x in tests_deps if x)
+
+    @property
+    def list_packages(self):
+        'A simple dh_listpackages'
+        packages = []
+        for part in self.control:
+            package_name = part.get('Package')
+            if package_name:
+                packages.append(package_name)
+        return packages
+
+    @property
+    def description(self):
+        for block in self.control:
+            if 'Description' in block:
+                return block['Description']
+        return ''
+
+    @property
+    def short_description(self):
+        return self.description.split('\n', 2)[0]
 
     @property
     def upstream_metadata(self):

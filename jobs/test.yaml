@@ -1,54 +1,5 @@
-- project:
-    name: kde-frameworks
-    item:
-        - extra-cmake-modules:
-            description: 'Extra modules and scripts for CMake'
-            build_dependencies:
-            test_dependencies:
-        - kio:
-            description: 'Resource and network access abstraction'
-            build_dependencies:
-                - extra-cmake-modules_publish
-            test_dependencies:
-    jobs:
-        - 'kde-frameworks-{item}'
-
-- project:
-    name: kde-plasma
-    item:
-        - kscreen:
-            description: 'KDE monitor hotplug and screen handling'
-            build_dependencies:
-                - extra-cmake-modules_publish
-            test_dependencies:
-        - kwin:
-            description: 'KDE window manager'
-            build_dependencies:
-                - extra-cmake-modules_publish
-                - kscreen_publish
-            test_dependencies:
-    jobs:
-        - 'kde-plasma-{item}'
-
-- project:
-    name: kde-applications
-    item:
-        - kate:
-            description: 'powerful text editor'
-            build_dependencies:
-                - extra-cmake-modules_publish
-                - kwin_publish
-            test_dependencies:
-        - kdenlive:
-            description: 'non-linear video editor'
-            build_dependencies:
-                - extra-cmake-modules_publish
-            test_dependencies:
-    jobs:
-        - 'kde-applications-{item}'
-
 - job-group:
-    name: 'kde-frameworks-{item}'
+    name: 'frameworks-{item}'
     arch:
         - amd64
         - i386
@@ -65,7 +16,7 @@
     description: '{description}'
 
 - job-group:
-    name: 'kde-plasma-{item}'
+    name: 'plasma-{item}'
     arch:
         - amd64
         - i386
@@ -82,7 +33,7 @@
     description: '{description}'
 
 - job-group:
-    name: 'kde-applications-{item}'
+    name: 'applications-{item}'
     arch:
         - amd64
         - i386

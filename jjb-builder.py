@@ -266,13 +266,8 @@ class Package(object):
 
 
 def obtain_packages(dirs):
-    full_dirs = (os.path.abspath(d) for d in dirs)
-    packages = (Package(d) for d in full_dirs)
+    packages = (Package(d) for d in dirs)
     return list(packages)
-
-
-def dump_packages(packages, output):
-    yaml.dump(packages, output)
 
 
 def print_descriptions(packages):
@@ -321,8 +316,36 @@ def process_dependencies(packages):
         relations.setdefault(package.name, {})['build'] = \
             package_relations(binaries, build_depends)
         test_dependencies = package.tests_depends
-        relations[package.name]['test'] = package_relations(binaries, test_dependencies)
+        relations[package.name]['test'] = \
+            package_relations(binaries, test_dependencies)
     return relations
+
+
+def prepare_projects(group_tree, dependencies):
+    projects = []
+    for group in group_tree:
+        print(group)
+        if not group.values:
+            continue
+        project = {}
+        projects.append({'project': project})
+        project['name'] = '-'.join(group.path)
+        project['jobs'] = ['{}-{{item}}'.format(project['name'])]
+        items = []
+        project['item'] = items
+        for name, package in group.values.items():
+            item = {}
+            items.append({name: item})
+            item['description'] = package.short_description
+            item['build_dependencies'] = list(
+                '{}_publish'.format(d) for d in dependencies[name]['build'])
+            item['test_dependencies'] = list(
+                '{}_publish'.format(d) for d in dependencies[name]['test'])
+    return projects
+
+
+def dump_projects(projects, output):
+    yaml.dump(projects, output)
 
 
 def main():
@@ -337,8 +360,8 @@ def main():
     packages = obtain_packages(args.package_directory)
     packages_relations = process_dependencies(packages)
     group_tree, groups = group_packages(packages)
-    print(packages)
-    dump_packages(packages, args.output)
+    projects = prepare_projects(group_tree, packages_relations)
+    dump_projects(projects, args.output)
 
 
 if __name__ == "__main__":

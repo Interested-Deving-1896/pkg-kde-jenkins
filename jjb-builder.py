@@ -56,20 +56,28 @@ class Tree(object):
         return "{{Tree path: {}, subtrees: {}, values: {}}}".format(
             self.path, self.subtrees, self.values)
 
+    def __iter__(self):
+        yield self
+        for key, value in self.subtrees.items():
+            yield value
+
 
 def group_packages(packages):
     ''' Group packages by directories hierarchies '''
 
     tree = Tree()
+    groups = {}
 
     for package in packages:
         dirs = tuple(package.path.lstrip(os.path.sep).split(os.path.sep))
         tree.add(dirs[:-1], package)
-        print(tree)
     tree = tree.compress()
-    print(tree)
+    for parent in tree:
+        print(parent.path[-1])
+        groups[parent.path[-1]] = parent
 
-    return tree
+    return tree, groups
+
 
 class Package(object):
 

@@ -126,30 +126,6 @@
             threshold: UNSTABLE
 
 - job-template:
-    name: '{item}_build'
-    # Needs the Matrix Project Plugin
-    project-type: matrix
-    axes:
-        - axis: 
-    description: '{description} -- Build for {arch}'
-    workspace: '{workspace}'
-    node: '{arch}'
-    triggers:
-        - reverse:
-            jobs: '{obj:dependencies}'
-            result: 'unstable'
-    publishers:
-        # Needs the Flexible Publish Plugin
-        - conditional-publisher:
-            - condition-kind: regexp
-              condition-expression: ^amd64$
-              condition-searchtext: '{arch}'
-              action:
-                  - trigger:
-                      project: '{item}_test'
-                      threshold: UNSTABLE
-
-- job-template:
     name: '{item}_build_{arch}'
     description: '{description} -- Build for {arch}'
     workspace: '{workspace}'

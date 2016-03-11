@@ -275,6 +275,56 @@ def dump_packages(packages, output):
     yaml.dump(packages, output)
 
 
+def print_descriptions(packages):
+    for package in packages:
+        print(package.short_description)
+
+
+def package_relations(binaries, dependencies):
+    '''Process dependencies against binaries
+
+    :binaries: is a dictionary that maps binaries to the package_name
+               that generates it.
+    :dependencies: is a dpkg depends string
+    :returns: a mapping, of the package_names that generate the needed
+              binaries, and the binaries that cause the dependency as the
+              value.
+    '''
+    bin_deps = set()
+    rels = deb822.PkgRelation.parse_relations(dependencies)
+    for or_part in rels:
+        for part in or_part:
+            bin_deps.add(part['name'])
+    internal_dep = {}
+    for dep in bin_deps:
+        if dep in binaries:
+            internal_dep.setdefault(binaries[dep], []).append(dep)
+    return internal_dep
+
+
+def process_dependencies(packages):
+    binaries = {}
+    for package in packages:
+        name = package.name
+        for binary in package.list_packages:
+            if binary in binaries:
+                print('ERROR: The package {} seems to be produced by two '
+                      'or more source packages: {}, {}'.format(
+                          binary,
+                          binaries[binary],
+                          name))
+            else:
+                binaries[binary] = name
+    relations = {}
+    for package in packages:
+        build_depends = package.build_depends
+        relations.setdefault(package.name, {})['build'] = \
+            package_relations(binaries, build_depends)
+        test_dependencies = package.tests_depends
+        relations[package.name]['test'] = package_relations(binaries, test_dependencies)
+    return relations
+
+
 def main():
     argparser = argparse.ArgumentParser(description=__doc__,
                                         fromfile_prefix_chars='@')
@@ -285,8 +335,9 @@ def main():
     args = argparser.parse_args()
 
     packages = obtain_packages(args.package_directory)
+    packages_relations = process_dependencies(packages)
+    group_tree, groups = group_packages(packages)
     print(packages)
-    group_tree = group_packages(packages)
     dump_packages(packages, args.output)
 
 

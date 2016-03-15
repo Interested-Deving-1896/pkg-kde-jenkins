@@ -31,13 +31,14 @@ class Tree(object):
         self.subtrees = {}
         self.values = {}
 
-    def add(self, parents, package):
+    def add(self, parents, package, path=tuple()):
         if not parents:
             self.values[package.name] = package
             return
         head, tail = parents[:1], parents[1:]
-        subtree = self.subtrees.setdefault(head, Tree(head))
-        subtree.add(tail, package)
+        new_path = path + head
+        subtree = self.subtrees.setdefault(head, Tree(new_path))
+        subtree.add(tail, package, path=new_path)
 
     def compress(self):
         new_subs = {}
@@ -73,7 +74,7 @@ def group_packages(packages):
         tree.add(dirs[:-1], package)
     tree = tree.compress()
     for parent in tree:
-        print(parent.path[-1])
+        print(parent.path)
         groups[parent.path[-1]] = parent
 
     return tree, groups
@@ -201,13 +202,12 @@ class Package(object):
     @property
     def source_name(self):
         ''' Source package name '''
-        control = next(self.control)
-        return control.get('Source')
+        return self.control[0].get('Source')
 
     @property
     def vcs(self):
         ''' Vcs uri '''
-        control = next(self.control)
+        control = self.control[0]
         for vcs_type in ['Git', 'Svn', 'Arch', 'Bzr', 'Cvs', 'Darcs', 'Hg', 'Mtn']:
             key = 'Vcs-{}'.format(vcs_type)
             if key in control:
@@ -230,11 +230,12 @@ class Package(object):
     (if it's in DEP5 format), and fallback to use the Source field
     from the control file.
         '''
-
-        name = self.upstream_metadata.get('Name')
-        if name:
-            return name
-        copyright = next(self.copyright)
+        upstream_metadata = self.upstream_metadata
+        if upstream_metadata:
+            name = upstream_metadata.get('Name')
+            if name:
+                return name
+        copyright = self.copyright[0]
         if copyright and copyright.get('Upstream-Name'):
             return copyright.get('Upstream-Name')
         return self.source_name
@@ -249,13 +250,15 @@ class Package(object):
     from the control file.
         '''
 
-        vcs = self.upstream_name.get('Repository')
-        if vcs:
-            return vcs
-        copyright = next(self.copyright)
+        upstream_metadata = self.upstream_metadata
+        if upstream_metadata:
+            vcs = self.upstream_metadata.get('Repository')
+            if vcs:
+                return vcs
+        copyright = self.copyright[0]
         if copyright and copyright.get('Source'):
             return copyright.get('Source')
-        control = next(self.control)
+        control = self.control[0]
         return control.get('Homepage')
 
     def __repr__(self):
@@ -329,7 +332,7 @@ def prepare_projects(group_tree, dependencies):
             continue
         project = {}
         projects.append({'project': project})
-        project['name'] = '-'.join(group.path)
+        project['name'] = '-'.join(group.path[-1:])
         project['jobs'] = ['{}-{{item}}'.format(project['name'])]
         items = []
         project['item'] = items
@@ -341,6 +344,8 @@ def prepare_projects(group_tree, dependencies):
                 '{}_publish'.format(d) for d in dependencies[name]['build'])
             item['test_dependencies'] = list(
                 '{}_publish'.format(d) for d in dependencies[name]['test'])
+            item['debian_vcs'] = package.vcs.uri
+            item['upstream_vcs'] = package.upstream_vcs
     return projects
 
 

@@ -1,6 +1,5 @@
 #!/bin/sh
 
-set -x
 set -e
 
 if [ ! -d "${WORKSPACE}/repo" ]; then
@@ -35,11 +34,15 @@ upstream_version=${epochless_version%%-*}
 # TODO: What about dfsg tags?
 upstream_tag=$(expand_tag "${upstream_version}")
 
-# ignore the "unstable" (*.*.80 or up) releases
+# ignore the "unstable" (*.*.80 + as well as the rc, alpha and beta tags) releases
 release_tag=$(git tag --sort='version:refname' -l "$(expand_tag '*')" | \
-    egrep -v '([89][0-9]+|(rc|alpha|beta)[0-9]*)$' | \
-    sed -n "/${upstream_tag}/+1,\$p" | \
-    tail -1)
+    sed -n -r '
+/([89][0-9]+|(rc|alpha|beta)[0-9]*)$/d
+/^'"${upstream_tag}"'$/,$ {
+    /^'"${upstream_tag}"'$/d
+    p
+}' | tail -1)
+
 
 if [ -z "${release_tag}" ]; then
     # No new release

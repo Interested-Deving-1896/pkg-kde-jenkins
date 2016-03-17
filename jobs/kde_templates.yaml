@@ -87,8 +87,10 @@
                 - upstream:
                     url: '{upstream_vcs}'
             branches:
-                - refs/remotes/debian/master
+                - debian/master
+            local-branch: master
             wipe-workspace: false
+            skip-tag: true
     triggers:
         - pollscm:
             cron: '* * * * *'
@@ -118,6 +120,13 @@
                   - trigger:
                       project: '{item}_test'
                       threshold: UNSTABLE
+    scm:
+        - workspace:
+            parent-job: '{item}_prepare'
+            criteria: 'Not Failed'
+    builders:
+        - shell:
+            !include-raw-escape: build_build.sh
 
 - job-template:
     name: '{item}_publish'

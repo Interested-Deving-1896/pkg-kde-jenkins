@@ -90,6 +90,8 @@
                 - refs/remotes/debian/master
             wipe-workspace: false
     triggers:
+        - pollscm:
+            cron: '* * * * *'
         - script:
             script:
                 !include-raw-escape: prepare_trigger.sh

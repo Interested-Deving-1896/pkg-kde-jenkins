@@ -11,9 +11,10 @@
         - '{item}_publish'
         - '{item}_test':
             dependencies: '{obj:test_dependencies}'
-    workspace: '/srv/jenkins/kde/frameworks/{item}'
     dependencies: '{obj:build_dependencies}'
     description: '{description}'
+    debian_vcs: '{debian_vcs}'
+    upstream_vcs: '{upstream_vcs}'
 
 - job-group:
     name: 'plasma-{item}'
@@ -28,9 +29,10 @@
         - '{item}_publish'
         - '{item}_test':
             dependencies: '{obj:test_dependencies}'
-    workspace: '/srv/jenkins/kde/plasma/{item}'
     dependencies: '{obj:build_dependencies}'
     description: '{description}'
+    debian_vcs: '{debian_vcs}'
+    upstream_vcs: '{upstream_vcs}'
 
 - job-group:
     name: 'applications-{item}'
@@ -45,9 +47,10 @@
         - '{item}_publish'
         - '{item}_test':
             dependencies: '{obj:test_dependencies}'
-    workspace: '/srv/jenkins/kde/applications/{item}'
     dependencies: '{obj:build_dependencies}'
     description: '{description}'
+    debian_vcs: '{debian_vcs}'
+    upstream_vcs: '{upstream_vcs}'
 
 - defaults:
     name: global
@@ -61,7 +64,6 @@
 - job-template:
     name: '{item}_prepare'
     description: '{description} -- Prepare'
-    workspace: '{workspace}'
     publishers:
         - trigger:
             project: '{item}_build_amd64'
@@ -75,11 +77,30 @@
         - trigger:
             project: '{item}_build_armel'
             threshold: UNSTABLE
+    scm:
+        - git:
+            url: '{debian_vcs}'
+            basedir: 'repo'
+            remotes:
+                - debian:
+                    url: '{debian_vcs}'
+                - upstream:
+                    url: '{upstream_vcs}'
+            branches:
+                - refs/remotes/debian/master
+            wipe-workspace: false
+    triggers:
+        - script:
+            script:
+                !include-raw-escape: prepare_trigger.sh
+            cron: '* * * * *'
+    builders:
+        - shell:
+            !include-raw-escape: prepare_build.sh
 
 - job-template:
     name: '{item}_build_{arch}'
     description: '{description} -- Build for {arch}'
-    workspace: '{workspace}'
     node: '{arch}'
     triggers:
         - reverse:
@@ -99,7 +120,6 @@
 - job-template:
     name: '{item}_publish'
     description: '{description} -- Publish'
-    workspace: '{workspace}'
     triggers:
         - reverse:
             jobs:
@@ -112,7 +132,6 @@
 - job-template:
     name: '{item}_test'
     description: '{description} -- Test'
-    workspace: '{workspace}'
     triggers:
         - reverse:
             jobs: '{obj:dependencies}'

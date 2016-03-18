@@ -1,0 +1,1441 @@
+#!/usr/bin/env python3
+
+import argparse
+import collections
+import debian.deb822 as deb822
+import debian.debian_support as debian_support
+import itertools
+import functools
+import logging
+import os
+import ply.lex as lex
+import ply.yacc as yacc
+import re
+import shutil
+import subprocess
+import tempfile
+
+
+re_keyword = re.compile('^[A-Z_]+$')
+
+
+class Dependency(
+    collections.namedtuple(
+        'Dependency', ['name', 'required', 'optional'])):
+
+    def __new__(cls, name, required=None, optional=None):
+        return super().__new__(cls, name, required, optional)
+
+
+Version = debian_support.Version
+
+
+class Parser(object):
+
+    """
+    Base class for a lexer/parser that has the rules defined as methods
+    """
+    tokens = ()
+    precedence = ()
+
+    def __init__(self, **kw):
+        self.debug = kw.get('debug', 0)
+        self.names = {}
+        try:
+            modname = os.path.split(os.path.splitext(__file__)[0])[1] + "_" + self.__class__.__name__
+        except Exception:
+            modname = "parser" + "_" + self.__class__.__name__
+        self.debugfile = modname + ".dbg"
+        self.tabmodule = modname + "_" + "parsetab"
+        # print self.debugfile, self.tabmodule
+
+        # Build the lexer and parser
+        self.lexer = lex.lex(module=self, debug=self.debug)
+        self.parser = yacc.yacc(module=self,
+                                debug=self.debug,
+                                debugfile=self.debugfile,
+                                tabmodule=self.tabmodule)
+
+    def run(self, fileobj):
+        self.lexer.lineno = 1
+        return self.parser.parse(fileobj.read(), tracking=True)
+
+
+class CMakeParser(Parser):
+    tokens = (
+        'BRACKETARG',
+        'COMMENT',
+        'ID',
+        'LBRACE',
+        'RBRACE',
+        'ARG',
+        'WHITE',
+        'DQUOTE',
+        'VAR',
+        'RCURLY',
+        'VLT',
+        'GT',
+        'newline',
+    )
+    states = (
+        ('args', 'exclusive'),
+        ('bracketarg', 'exclusive'),
+        ('linecomment', 'exclusive'),
+        ('string', 'exclusive'),
+        ('var', 'exclusive')
+    )
+
+    t_ignore = ' \t'
+    t_args_ignore = ''
+    t_bracketarg_ignore = ''
+    t_linecomment_ignore = ''
+    t_string_ignore = ''
+    t_var_ignore = ''
+
+    t_ID = r'[a-zA-Z][a-zA-Z0-9_]*'
+
+    def t_COMMENT_BRACKET(self, t):
+        r'\#\[=*\['
+        self.bracketarg_len = len(t.value) - 1
+        self.lexer.push_state('bracketarg')
+        t.type = 'COMMENT'
+        return t
+
+    def t_COMMENT(self, t):
+        r'\#'
+        self.lexer.push_state('linecomment')
+        return t
+
+    def t_LBRACE(self, t):
+        r'\('
+        self.lexer.push_state('args')
+        return t
+
+    def t_args_COMMENT_BRACKET(self, t):
+        r'\#\[=*\['
+        self.bracketarg_len = len(t.value) - 1
+        self.lexer.push_state('bracketarg')
+        t.type = 'COMMENT'
+        return t
+
+    def t_args_COMMENT(self, t):
+        r'\#'
+        self.lexer.push_state('linecomment')
+        return t
+
+    def t_args_LBRACE(self, t):
+        r'\('
+        self.lexer.push_state('args')
+        return t
+
+    def t_args_RBRACE(self, t):
+        r'\)'
+        self.lexer.pop_state()
+        return t
+
+    t_args_ARG = r'[^\s()\#"\\;$]+'
+
+    def t_args_ESC_ID(self, t):
+        r'\\[()\#" \\$@^;]'
+        t.value = t.value[1]
+        t.type = 'ARG'
+        return t
+
+    def t_args_ESC_ENC(self, t):
+        r'\\[ntr]'
+        if t.value == '\\n':
+            t.value = '\n'
+        elif t.value == '\\t':
+            t.value = '\t'
+        elif t.value == '\\r':
+            t.value = '\r'
+        t.type = 'ARG'
+        return t
+
+    def t_args_ENVVAR(self, t):
+        r'\$ENV{'
+        self.lexer.push_state('var')
+        t.type = 'VAR'
+        return t
+
+    def t_args_VAR(self, t):
+        r'\${'
+        self.lexer.push_state('var')
+        return t
+
+    def t_args_VLT(self, t):
+        r'\$<'
+        self.lexer.push_state('var')
+        return t
+
+    def t_args_WHITE(self, t):
+        r'[\s;]+'
+        self.lexer.lineno += t.value.count('\n')
+        return t
+
+    def t_args_DQUOTE(self, t):
+        r'"'
+        self.lexer.push_state('string')
+        return t
+
+    def t_args_BRACKETARG(self, t):
+        r'\[=*\['
+        self.bracketarg_len = len(t.value)
+        self.lexer.push_state('bracketarg')
+        return t
+
+    def t_string_DQUOTE(self, t):
+        r'"'
+        self.lexer.pop_state()
+        return t
+
+    def t_string_ENVVAR(self, t):
+        r'\$ENV{'
+        self.lexer.push_state('var')
+        t.type = 'VAR'
+        return t
+
+    def t_string_VAR(self, t):
+        r'\${'
+        self.lexer.push_state('var')
+        return t
+
+    def t_string_ARG(self, t):
+        r'[^\\"]+'
+        return t
+
+    def t_string_ESC_ID(self, t):
+        r'\\[()\#" \\$@^;]'
+        t.value = t.value[1]
+        t.type = 'ARG'
+        return t
+
+    def t_string_ESC_ENC(self, t):
+        r'\\[ntr]'
+        if t.value == '\\n':
+            t.value = '\n'
+        elif t.value == '\\t':
+            t.value = '\t'
+        elif t.value == '\\r':
+            t.value = '\r'
+        t.type = 'ARG'
+        return t
+
+    def t_string_ESC_CONT(self, t):
+        r'\\\n'
+        self.lexer.lineno += 1
+
+    t_var_ARG = r'[^\s()\#"\\;$}>]+'
+
+    def t_var_ENVVAR(self, t):
+        r'\$ENV{'
+        self.lexer.push_state('var')
+        t.type = 'VAR'
+        return t
+
+    def t_var_VAR(self, t):
+        r'\${'
+        self.lexer.push_state('var')
+        return t
+
+    def t_var_VLT(self, t):
+        r'\$<'
+        self.lexer.push_state('var')
+        return t
+
+    def t_var_RCURLY(self, t):
+        r'}'
+        self.lexer.pop_state()
+        return t
+
+    def t_var_GT(self, t):
+        r'>'
+        self.lexer.pop_state()
+        return t
+
+    def t_bracketarg_BRACKETARG(self, t):
+        r'\]=*\]'
+        if len(t.value) == self.bracketarg_len:
+            self.lexer.pop_state()
+            return t
+        t.type = 'ARG'
+        return t
+
+    def t_bracketarg_newline(self, t):
+        r'\n+'
+        self.lexer.lineno += len(t.value)
+        t.type = 'ARG'
+        return t
+
+    def t_bracketarg_ARG(self, t):
+        r'.'
+        return t
+
+    t_linecomment_ARG = r'.+'
+
+    def t_linecomment_newline(self, t):
+        r'\n+'
+        self.lexer.lineno += len(t.value)
+        self.lexer.pop_state()
+        return t
+
+    def t_newline(self, t):
+        r'\n+'
+        self.lexer.lineno += len(t.value)
+
+    def t_ANY_error(self, t):
+        logging.error(
+            "Illegal character '{}' at line {}".format(t.value,
+                                                       self.lexer.lineno))
+        self.lexer.skip(1)
+
+    ##
+    # Parser yacc rules
+    ##
+
+    def p_elements_optional(self, p):
+        '''elements_optional : elements
+                             | empty'''
+        p[0] = p[1] if p[1] else []
+
+    def p_elements(self, p):
+        '''elements : elements element
+                    | element'''
+        aux = p[len(p) - 1]
+        if aux and len(p) == 3 and p[1]:
+            p[0] = p[1] + [aux]
+            # logging.debug('element {}'.format(aux))
+        elif len(p) == 3 and p[1]:
+            p[0] = p[1]
+        elif aux:
+            p[0] = [aux]
+            # logging.debug('element {}'.format(aux))
+
+    def p_element(self, p):
+        '''element : command
+                   | comment'''
+        if p[1]:
+            p[0] = p[1]
+
+    def p_command(self, p):
+        '''command : ID LBRACE arguments_optional RBRACE'''
+        command = p[1]
+        args = p[3]
+
+        p[0] = [command] + args
+
+    def p_arguments_optional(self, p):
+        '''arguments_optional : arguments argument_separators
+                              | arguments
+                              | argument_separators
+                              | empty'''
+        if not p[1]:
+            p[0] = []
+        else:
+            p[0] = p[1]
+
+    def p_arguments(self, p):
+        '''arguments : arguments argument_separators argument
+                     | argument_separators argument
+                     | argument'''
+        aux = [p[len(p) - 1]]
+        if len(p) == 4:
+            p[0] = p[1] + aux
+        else:
+            p[0] = aux
+
+    def p_argument_separators(self, p):
+        '''argument_separators : argument_separators argument_separator
+                               | argument_separator'''
+        p[0] = ''
+
+    def p_arguments_separator(self, p):
+        '''argument_separator : comment
+                              | WHITE'''
+        p[0] = ''
+
+    def p_argument(self, p):
+        '''argument : argument_parts
+                    | LBRACE arguments_optional RBRACE'''
+        if len(p) == 4:
+            p[0] = [p[2]]
+        else:
+            p[0] = p[1][0] if len(p[1]) == 1 else p[1]
+
+    def p_argument_parts(self, p):
+        '''argument_parts : argument_parts argument_part
+                          | argument_part'''
+        aux = [p[len(p) - 1]]
+        if len(p) == 3:
+            p[0] = p[1] + aux
+        else:
+            p[0] = aux
+
+    def p_argument_part(self, p):
+        '''argument_part : var
+                         | bracket_argument
+                         | quoted_argument
+                         | unquoted_argument'''
+        p[0] = p[1]
+
+    def p_bracket_argument(self, p):
+        '''bracket_argument : BRACKETARG args_optional BRACKETARG'''
+        p[0] = p[2]
+
+    def p_quoted_argument(self, p):
+        '''quoted_argument : DQUOTE quoted_argument_parts_optional DQUOTE'''
+        p[0] = p[2]
+
+    def p_quoted_argument_parts_optional(self, p):
+        '''quoted_argument_parts_optional : quoted_argument_parts
+                                          | empty'''
+        p[0] = p[1] if p[1] else ''
+
+    def p_quoted_argument_parts(self, p):
+        '''quoted_argument_parts : quoted_argument_parts quoted_argument_part
+                                 | quoted_argument_part'''
+        aux = [p[len(p) - 1]]
+        if len(p) == 3:
+            p[0] = p[1] + aux
+        else:
+            p[0] = aux
+
+    def p_quoted_argument_part(self, p):
+        '''quoted_argument_part : args
+                                | var'''
+        p[0] = p[1]
+
+    def p_unquoted_argument(self, p):
+        '''unquoted_argument : args'''
+        p[0] = p[1]
+
+    def p_var(self, p):
+        '''var : VAR var_parts RCURLY
+               | VLT var_parts GT'''
+        # logging.debug(p[:])
+        if p[1] == '$ENV{':
+            p[0] = ('ENV', p[2])
+        else:
+            p[0] = ('VAR', p[2])
+
+    def p_var_parts(self, p):
+        '''var_parts : var_parts var_part
+                     | var_part'''
+        aux = p[len(p) - 1]
+        if len(p) == 3:
+            p[0] = [p[1]] + [aux]
+        else:
+            p[0] = aux
+
+    def p_var_part(self, p):
+        '''var_part : args
+                    | var'''
+        p[0] = p[1]
+
+    def p_comment(self, p):
+        '''comment : COMMENT args_optional comment_end'''
+        p[0] = ''
+        # p[0] = 'COMMENT: {}'.format(p[1])
+
+    def p_args_optional(self, p):
+        '''args_optional : args
+                         | empty'''
+        p[0] = p[1] if p[1] else ''
+
+    def p_comment_end(self, p):
+        '''comment_end : newline
+                       | BRACKETARG'''
+
+    def p_args(self, p):
+        '''args : args arg
+                | arg'''
+        p[0] = ''.join(p[1:])
+
+    def p_arg(self, p):
+        '''arg : ARG'''
+        p[0] = p[1]
+
+    def p_empty(self, p):
+        'empty :'
+        pass
+
+    def p_error(self, p):
+        if p:
+            logging.error("Syntax error at '%s' at %s" % (p.value, p.lexpos))
+        else:
+            logging.error("Syntax error at EOF")
+
+    def mylex(self, lines):
+        self.lexer.lineno = 1
+        tokens = []
+        for line in lines:
+            tokens.append('{}:'.format(self.lexer.lineno))
+            self.lexer.input(line)
+            token = self.lexer.token()
+            while token:
+                tokens.append(token)
+                token = self.lexer.token()
+        return tokens
+
+    def product_mixed(self, spec):
+        # logging.debug(spec)
+        l = list(map(lambda a: ''.join(a), itertools.product(*spec)))
+        if len(l) == 1:
+            return l[0]
+        return l
+
+    def expand(self, values):
+        l = []
+        if isinstance(values, tuple) and values[0] in ('VAR', 'ENV'):
+            values = [values]
+
+        for value in values:
+            if value[0] == 'VAR':
+                var_name = self.expand(value[1])
+                if var_name in self.variables:
+                    logging.debug('Append: {} + {}'.format(l,
+                                                           self.variables[var_name]))
+                    l.append(self.variables[var_name])
+                else:
+                    logging.error('var {} not found'.format(var_name))
+                    l.append('')
+            elif value[0] == 'ENV':
+                var_name = self.expand(value[1])
+                if var_name in os.environ:
+                    l.append(os.environ[var_name])
+                else:
+                    logging.error('env {} not found'.format(var_name))
+                    l.append('')
+            else:
+                l.append(value)
+            if not isinstance(l[-1], list):
+                l[-1] = [l[-1]]
+        return self.product_mixed(l)
+
+    def relative_dirname_join(self, *args):
+        dirname = os.path.dirname(self.file_stack[-1])
+        return os.path.join(dirname, *args)
+
+    def requirement_merge(self, dependency):
+        if dependency.name not in self.requirements:
+            self.requirements[dependency.name] = dependency
+            return
+        current = self.requirements[dependency.name]
+        if dependency.required and current.required:
+            if dependency.required > current.required:
+                current = current._replace(required=dependency.required)
+        elif dependency.required:
+            current = current._replace(required=dependency.required)
+        if dependency.optional and current.optional:
+            if dependency.optional > current.optional:
+                current = current._replace(optional=dependency.optional)
+        elif dependency.optional:
+            current = current._replace(optional=dependency.optional)
+
+        self.requirements[dependency.name] = current
+
+    def cmake_minimum_required(self, invocation):
+        required = False
+        version = None
+
+        args = invocation[1:]
+        assert(args[0].lower() == 'version')
+
+        version = self.expand(args[1])
+
+        required = ((self.expand(args[2]).lower() == 'fatal_error')
+                    if len(args) >= 3 else False)
+
+        if required:
+            d = Dependency('cmake', required=Version(version))
+        else:
+            d = Dependency('cmake', optional=Version(version))
+        # logging.debug(d)
+
+        self.requirement_merge(d)
+
+    def add_subdirectory(self, invocation):
+        # logging.debug(invocation)
+        subdir = self.expand(invocation[1])
+        filename = self.relative_dirname_join(subdir, 'CMakeLists.txt')
+        # logging.debug(filename)
+        self.run_file(filename)
+
+    def cmake_set(self, invocation):
+        # logging.debug(invocation)
+        var_name = self.expand(invocation[1])
+        if isinstance(var_name, list):
+            invocation[2:2] = var_name[1:]
+            var_name = var_name[0]
+        value = []
+        for arg in invocation[2:]:
+            if arg in ('CACHE', 'PARENT_SCOPE'):
+                break
+            expanded_arg = self.expand(arg)
+            if isinstance(expanded_arg, list):
+                value.extend(expanded_arg)
+            else:
+                value.append(self.expand(arg))
+        if len(value) == 1:
+            value = value[0]
+
+        logging.debug('{} = {}'.format(var_name, value))
+        if not isinstance(var_name, list):
+            self.variables[var_name] = value
+
+    def find_package(self, invocation):
+        # find_package(pkgname [version] [exact] [quiet] [module] [required]
+        # [[components] names] [optional_components names])
+        logging.debug(invocation)
+
+        re_version = re.compile('^[0-9.]+$')
+
+        package = self.expand(invocation[1])
+        version = None
+        components = []
+        optional_components = []
+        required = False
+        i = 2
+        keywords = {
+            'EXACT': 0, 'QUIET': 0, 'CONFIG': 0, 'MODULE': 0,
+            'NO_MODULE': 0, 'NO_POLICY_SCOPE': 0, 'REQUIRED': 0,
+            'NO_DEFAULT_PATH': 0, 'NO_CMAKE_ENVIRONMENT_PATH': 0,
+            'NO_CMAKE_PATH': 0, 'NO_SYSTEM_ENVIRONMENT_PATH': 0,
+            'NO_CMAKE_PACKAGE_REGISTRY': 0, 'NO_CMAKE_BUILDS_PATH': 0,
+            'NO_CMAKE_SYSTEM_PATH': 0,
+            'NO_CMAKE_SYSTEM_PACKAGE_REGISTRY': 0,
+            'CMAKE_FIND_ROOT_PATH_BOTH': 0,
+            'CMAKE_FIND_ROOT_PATH_BOTH': 0,
+            'ONLY_CMAKE_FIND_ROOT_PATH': 0,
+            'NO_CMAKE_FIND_ROOT_PATH': 0,
+            'COMPONENTS': 1,
+            'OPTIONAL_COMPONENTS': 2,
+            'NAMES': 4, 'CONFIGS': 4, 'HINTS': 4, 'PATHS': 4,
+            'PATH_SUFFIXES': 4,
+        }
+        if i < len(invocation):
+            arg = self.expand(invocation[i])
+            logging.debug("Is a version: {} ?".format(arg))
+            if re_version.match(arg):
+                version = Version(arg)
+                i += 1
+        state = 0
+        while i < len(invocation):
+            arg = self.expand(invocation[i])
+            # logging.debug(arg)
+            i += 1
+            if arg not in keywords:
+                if state == 0 or state & 1:
+                    components.append(arg)
+                elif state & 2:
+                    optional_components.append(arg)
+            else:
+                state = keywords[arg]
+                if arg == 'REQUIRED':
+                    required = True
+
+        kw = {}
+
+        if (required or optional_components):
+            kw['required'] = version if version else Version('0')
+        else:
+            kw['optional'] = version
+
+        if not (components or optional_components):
+            self.requirement_merge(Dependency(package, **kw))
+        else:
+            for c in components:
+                self.requirement_merge(Dependency(
+                    '{}{}'.format(package, c),
+                    **kw))
+            for c in optional_components:
+                self.requirement_merge(Dependency(
+                    '{}{}'.format(package, c), optional=version))
+
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        self.files = {}
+        self.file_stack = collections.deque()
+        self.variables = {
+            'CMAKE_SOURCE_DIR': '.',
+        }
+        self.packages = {}
+        self.functions = {}
+        self.requirements = {}
+
+        self.known_commands = {
+            'add_subdirectory': self.add_subdirectory,
+            'cmake_minimum_required': self.cmake_minimum_required,
+            'set': self.cmake_set,
+            'find_package': self.find_package,
+            'macro_optional_find_package': self.find_package,
+        }
+
+    def add_file(self, filename):
+        if filename in self.files:
+            return
+        f = open(filename)
+        self.lexer.lineno = 1
+        self.files[filename] = self.parser.parse(f.read(), tracking=True)
+        return self.files[filename]
+
+    def call(self, function, args):
+        pass
+
+    def run_file(self, filename):
+        logging.debug('About to process: {}'.format(filename))
+        invocations = self.add_file(filename)
+        if not invocations:
+            return
+        logging.debug('Start of: {}'.format(filename))
+        self.file_stack.append(filename)
+        for invocation in invocations:
+            command = invocation[0].lower()
+            if command in self.known_commands:
+                self.known_commands[command](invocation)
+            elif command in self.functions:
+                self.call(self.functions[command], invocation[1:])
+            else:
+                # logging.debug(command)
+                pass
+        self.file_stack.pop()
+        logging.debug('End of: {}'.format(filename))
+
+        # queue = collections.deque(filenames)
+        # elements_queue = collections.deque()
+        # stack = collections.deque()
+        # while queue:
+        #     filename = queue.popleft()
+        #     elements = self.add_file(filename)
+        #     if not elements:
+        #         continue
+
+        #     for element in self.files[filename]
+
+    def print_requirements(self):
+        for name, dependency in self.requirements.items():
+            print(dependency)
+
+
+@functools.total_ordering
+class DebPackageInfo(object):
+
+    def __init__(self, name, uversion=None, epoch=None, mangler=None):
+        self.name = name
+        self._epoch = epoch
+        if uversion is None:
+            uversion = Version('0')
+        self.uversion = uversion
+        if not mangler:
+            mangler = self._mangler
+        self.mangler = mangler
+
+    @property
+    def epoch(self):
+        return self._epoch if self._epoch is not None else 0
+
+    def _mangler(self, upstream_version):
+        return '{}{}~'.format(
+            '{}:'.format(self.epoch) if self.epoch else '',
+            upstream_version)
+
+    def debian_version(self, uversion=None):
+        if not uversion and self.uversion:
+            uversion = str(self.uversion)
+        if uversion == '0':
+            return ''
+        return self.mangler(uversion)
+
+    def __str__(self):
+        s = self.name
+        version = self.debian_version()
+        if not version or version == '0':
+            return s
+        s += ' (>= {})'.format(version)
+        return s
+
+    def __lt__(self, other):
+        return ((self.name, self.epoch, self.uversion) <
+                (other.name, other.epoch, self.uversion))
+
+    def __eq__(self, other):
+        return ((self.name, self.epoch, self.uversion) ==
+                (other.name, other.epoch, self.uversion))
+
+
+class ReqToDebianPkg(object):
+
+    def __init__(self):
+        self.needed = {}
+        self.optional = {}
+
+    name = 'name'
+    epoch = 'epoch'
+    known = {
+        'ACL': {name: 'libacl1-dev'},
+        'ASPELL': {name: 'libaspell-dev'},
+        'AccountsFileDir': {name: 'libaccounts-glib-dev'},
+        'AccountsQt': {name: 'libaccounts-qt-dev'},
+        'AccountsQt5': {name: 'libaccounts-qt5-dev'},
+        'ActiveApp': None,  # Touch interface, not packaged
+        'AkabeiClient': None,  # Not there
+        'Akonadi': {name: 'libakonadi-dev'},
+        'Alsa': {name: 'libasound2-dev'},
+        'Analitza5': {name: 'libanalitza-dev'},
+        'AppstreamQt': None,  # Not there
+        'AstrometryNet': {name: 'astrometry.net'},
+        'Automoc4': {name: 'automoc'},
+        'Avahi': {name: 'libavahi-common-dev'},
+        'BISON': {name: 'bison'},
+        'BZip2': {name: 'libbz2-dev'},
+        'Baloo': {name: 'baloo-kf5-dev'},
+        'BalooWidgets': {name: 'libbaloowidgets-dev'},
+        'Boost': {name: 'libboost-dev'},
+        'BoostPython': {name: 'libboost-python-dev'},
+        'Boostgraph': {name: 'libboost-graph-dev'},
+        'CFITSIO': {name: 'libcfitsio-dev'},
+        'CFitsio': {name: 'libcfitsio-dev'},
+        'CHM': {name: 'libchm-dev'},
+        'CUPS': {name: 'libcups2-dev'},
+        'CURL': {name: 'libcurl4-gnutls-dev'},
+        'Canberra': {name: 'libcanberra-dev'},
+        'Carbon': None,  # Apple blah
+        'CatDoc': {name: 'catdoc'},
+        'Cccc': {name: 'cccc'},
+        'Cdparanoia': {name: 'libcdparanoia-dev'},
+        'Curses': {name: 'libncurses5-dev'},
+        'DBus': {name: 'libdbus-1-dev'},
+        'DBusGLib': {name: 'libdbus-glib-1-dev'},
+        'DBusMenuQt': {name: 'libdbusmenu-qt-dev'},
+        'DNSSD': {name: 'libavahi-compat-libdnssd-dev'},
+        'DebconfKDE': {name: 'libdebconf-kde-dev'},
+        'DjVuLibre': {name: 'libdjvulibre-dev'},
+        'DocBookXML': {name: 'docbook-xml'},
+        'DocBookXML4': {name: 'docbook-xml'},
+        'DocBookXSL': {name: 'docbook-xsl'},
+        'DolphinVcs': {name: 'libdolphinvcs-dev'},
+        'Doxygen': {name: 'doxygen'},
+        'ECM': {name: 'extra-cmake-modules'},
+        'EGL': {name: 'libegl1-mesa-dev'},
+        'ENCHANT': {name: 'libenchant-dev'},
+        'EPub': {name: 'libepub-dev'},
+        'Eigen3': {name: 'libeigen3-dev'},
+        'Evdev': {name: 'libevdev-dev'},
+        'Exiv2': {name: 'libexiv2-dev'},
+        'Expat': {name: 'libexpat1-dev'},
+        'FAM': {name: 'libfam-dev'},
+        'FFmpeg': None,  # libav is a mess
+        'FFmpegAVCODEC': {name: 'libavcodec-dev'},
+        'FFmpegAVFORMAT': {name: 'libavformat-dev'},
+        'FFmpegSWSCALE': {name: 'libswscale-dev'},
+        'FLEX': {name: 'flex'},
+        'Fontconfig': {name: 'libfontconfig1-dev'},
+        'Freetype': {name: 'libfreetype6-dev'},
+        'GIF': {name: 'libgif-dev'},
+        'GIO': {name: 'libglib2.0-dev'},
+        'GLEW': {name: 'libglew-dev'},
+        'GLIB2': {name: 'libglib2.0-dev'},
+        'GMP': {name: 'libgmp-dev'},
+        'GObject': {name: 'libglib2.0-dev'},
+        'GSL': {name: 'libgsl0-dev'},
+        'GSSAPI': {name: 'libkrb5-dev'},
+        'GTK2': {name: 'libgtk2.0-dev'},
+        'GTK3': {name: 'libgtk-3-dev'},
+        'Gettext': {name: 'gettext'},
+        'GettextPO': {name: 'libgettextpo-dev'},
+        'Git': {name: 'git'},
+        'Gpgme': {name: 'libgpgme11-dev'},
+        'Gphoto2': {name: 'libgphoto2-dev'},
+        'Grantlee': {name: 'libgrantlee-dev'},
+        'Grantlee5': {name: 'libgrantlee5-dev'},
+        'HSPELL': {name: 'hspell'},
+        'HUNSPELL': {name: 'libhunspell-dev'},
+        'HUpnp': {name: 'libhupnp-dev'},
+        'IBus': {name: 'libibus-1.0-dev'},
+        'IDN': {name: 'libidn11-dev'},
+        'INDI': {name: 'libindi-dev'},
+        'IOKit': None,  # Apple blah
+        'Intltool': {name: 'intltool'},
+        'JPEG': {name: 'libjpeg-dev'},
+        'Jasper': {name: 'libjasper-dev'},
+        'Journald': {name: 'libsystemd-dev'},
+        'JsonCpp': {name: 'libjsoncpp-dev'},
+        'KAccounts': {name: 'libkaccounts-dev'},
+        'KActivities': {name: 'libkactivities-dev'},
+        'KDE4': None,  # Done for now {name: 'kdelibs5-dev', epoch: 4},
+        'KDE4Internal': None,  # Done for now {name: 'kdelibs5-dev', epoch: 4},
+        'KDE4Workspace': {name: 'kde-workspace-dev'},
+        'KDED': {name: 'kded5-dev'},
+        'KDEExperimentalPurpose': None,  # Not a package
+        'KDEGames': {name: 'libkdegames-dev'},
+        'KDEWIN32': None,  # KDE for windows
+        'KDEWin': None,   # KDE for windows
+        'KDeclarative': None,  # Done for now {name: 'kdelibs5-dev'},
+        'KDecoration2': {name: 'libkdecorations2-dev'},
+        'KDevPlatform': {name: 'kdevplatform-dev'},
+        'KF5Activities': {name: 'libkf5activities-dev'},
+        'KF5Akonadi': {name: 'libkf5akonadi-dev'},
+        'KF5AkonadiCalendar': {name: 'libkf5akonadicalendar-dev'},
+        'KF5AkonadiContact': {name: 'libkf5akonadicontact-dev'},
+        'KF5AkonadiMime': {name: 'libkf5akonadimime-dev'},
+        'KF5AkonadiNotes': {name: 'libkf5akonadinotes-dev'},
+        'KF5AkonadiSearch': {name: 'libkf5akonadisearch-dev'},
+        'KF5AkonadiServer': {name: 'libkf5akonadiserver-dev'},
+        'KF5AkonadiSocialUtils': {name: 'libkf5akonadisocialutils-dev'},
+        'KF5AlarmCalendar': {name: 'libkf5alarmcalendar-dev'},
+        'KF5Archive': {name: 'libkf5archive-dev'},
+        'KF5Attica': {name: 'libkf5attica-dev'},
+        'KF5Auth': {name: 'libkf5auth-dev'},
+        'KF5Baloo': {name: 'baloo-kf5-dev'},
+        'KF5BalooWidgets': {name: 'libkf5baloowidgets-dev'},
+        'KF5Blog': {name: 'libkf5blog-dev'},
+        'KF5BluezQt': {name: 'libkf5bluezqt-dev'},
+        'KF5Bookmarks': {name: 'libkf5bookmarks-dev'},
+        'KF5CalendarCore': {name: 'libkf5calendarcore-dev'},
+        'KF5CalendarUtils': {name: 'libkf5calendarutils-dev'},
+        'KF5Codecs': {name: 'libkf5codecs-dev'},
+        'KF5Completion': {name: 'libkf5completion-dev'},
+        'KF5Config': {name: 'libkf5config-dev'},
+        'KF5ConfigWidgets': {name: 'libkf5configwidgets-dev'},
+        'KF5Contacts': {name: 'libkf5contacts-dev'},
+        'KF5CoreAddons': {name: 'libkf5coreaddons-dev'},
+        'KF5Crash': {name: 'libkf5crash-dev'},
+        'KF5DBusAddons': {name: 'libkf5dbusaddons-dev'},
+        'KF5DNSSD': {name: 'libkf5dnssd-dev'},
+        'KF5Declarative': {name: 'libkf5declarative-dev'},
+        'KF5DesignerPlugin': {name: 'kdesignerplugin'},
+        'KF5DocTools': {name: 'kdoctools-dev'},
+        'KF5Emoticons': {name: 'libkf5emoticons-dev'},
+        'KF5FileMetaData': {name: 'libkf5filemetadata-dev'},
+        'KF5FrameworkIntegration': {name: 'libkf5style-dev'},
+        'KF5GAPI': {name: 'libkf5gapi-dev'},
+        'KF5GlobalAccel': {name: 'libkf5globalaccel-dev'},
+        'KF5Gpgmepp': {name: 'libkf5gpgmepp-dev'},
+        'KF5GuiAddons': {name: 'libkf5guiaddons-dev'},
+        'KF5Holidays': {name: 'libkf5holidays-dev'},
+        'KF5I18n': {name: 'libkf5i18n-dev'},
+        'KF5IMAP': {name: 'libkf5imap-dev'},
+        'KF5IconThemes': {name: 'libkf5iconthemes-dev'},
+        'KF5IdentityManagement': {name: 'libkf5identitymanagement-dev'},
+        'KF5IdleTime': {name: 'libkf5idletime-dev'},
+        'KF5Init': {name: 'kinit-dev'},
+        'KF5ItemModels': {name: 'libkf5itemmodels-dev'},
+        'KF5ItemViews': {name: 'libkf5itemviews-dev'},
+        'KF5JS': {name: 'libkf5kjs-dev'},
+        'KF5JobWidgets': {name: 'libkf5jobwidgets-dev'},
+        'KF5JsEmbed': {name: 'libkf5jsembed-dev'},
+        'KF5KCMUtils': {name: 'libkf5kcmutils-dev'},
+        'KF5KDEGames': {name: 'libkf5kdegames-dev'},
+        'KF5KDELibs4Support': {name: 'libkf5kdelibs4support-dev'},
+        'KF5KDcraw': None,  # Not there yet {name: 'libkf5kdcraw-dev'},
+        'KF5KExiv2': {name: 'libkf5exiv2-dev'},
+        'KF5KHtml': {name: 'libkf5khtml-dev'},
+        'KF5KIO': {name: 'kio-dev'},
+        'KF5KMahjongglib': {name: 'libkf5kmahjongglib-dev'},
+        'KF5Kipi': None,   # Not there yet {name: 'libkf5kipi-dev'},
+        'KF5KontactInterface': {name: 'libkf5kontactinterface-dev'},
+        'KF5Kross': {name: 'kross-dev'},
+        'KF5Ldap': {name: 'libkf5ldap-dev'},
+        'KF5MailTransport': {name: 'libkf5mailtransport-dev'},
+        'KF5Mbox': {name: 'libkf5mbox-dev'},
+        'KF5Mime': {name: 'libkf5mime-dev'},
+        'KF5ModemManagerQt': {name: 'modemmanager-qt-dev'},
+        'KF5NetworkManagerQt': {name: 'libkf5networkmanagerqt-dev'},
+        'KF5NewStuff': {name: 'libkf5newstuff-dev'},
+        'KF5Notifications': {name: 'libkf5notifications-dev'},
+        'KF5NotifyConfig': {name: 'libkf5notifyconfig-dev'},
+        'KF5Package': {name: 'libkf5package-dev'},
+        'KF5Parts': {name: 'libkf5parts-dev'},
+        'KF5People': {name: 'libkf5people-dev'},
+        'KF5PimIdentities': {name: 'libkf5identitymanagement-dev'},
+        'KF5PimTextEdit': {name: 'libkf5pimtextedit-dev'},
+        'KF5Plasma': {name: 'plasma-framework-dev'},
+        'KF5PlasmaQuick': {name: 'plasma-framework-dev'},
+        'KF5Plotting': {name: 'libkf5plotting-dev'},
+        'KF5Prison': None,  # Not packaged
+        'KF5Pty': {name: 'libkf5pty-dev'},
+        'KF5Purpose': None,  # Not packaged
+        'KF5Runner': {name: 'libkf5runner-dev'},
+        'KF5Screen': {name: 'libkf5screen-dev', epoch: 4},
+        'KF5Service': {name: 'libkf5service-dev'},
+        'KF5Solid': {name: 'libkf5solid-dev'},
+        'KF5Sonnet': {name: 'libkf5sonnet-dev'},
+        'KF5Su': {name: 'libkf5su-dev'},
+        'KF5Syndication': {name: 'libkf5syndication-dev'},
+        'KF5SysGuard': {name: 'libkf5sysguard-dev', epoch: 4},
+        'KF5TextEditor': {name: 'libkf5texteditor-dev'},
+        'KF5TextWidgets': {name: 'libkf5textwidgets-dev'},
+        'KF5ThreadWeaver': {name: 'libkf5threadweaver-dev'},
+        'KF5Tnef': {name: 'libkf5tnef-dev'},
+        'KF5UnitConversion': {name: 'libkf5unitconversion-dev'},
+        'KF5Wallet': {name: 'libkf5wallet-dev'},
+        'KF5Wayland': {name: 'kwayland-dev', epoch: 4},
+        'KF5WebKit': {name: 'libkf5webkit-dev'},
+        'KF5WidgetsAddons': {name: 'libkf5widgetsaddons-dev'},
+        'KF5WindowSystem': {name: 'libkf5windowsystem-dev'},
+        'KF5XmlGui': {name: 'libkf5xmlgui-dev'},
+        'KF5XmlRpcClient': {name: 'libkf5xmlrpcclient-dev'},
+        'KFileMetaData': {name: 'libkfilemetadata-dev'},
+        'KHotKeysDBusInterface': {name: 'khotkeys-dev'},
+        'KRunnerAppDBusInterface': {name: 'libkf5runner-dev'},
+        'KSMServerDBusInterface': {name: 'plasma-workspace-dev'},
+        'KScreenLocker': {name: 'kscreenlocker-dev'},
+        'KTp': {name: 'libktp-dev'},
+        'KWinDBusInterface': {name: 'kwin-dev', epoch: 4},
+        'KdepimLibs': {name: 'kdepimlibs5-dev', epoch: 4},
+        'Kexiv2': {name: 'libkexiv2-dev'},
+        'Kipi': {name: 'libkipi-dev'},
+        'LCMS2': {name: 'liblcms2-dev'},
+        'LCov': {name: 'lcov'},
+        'LMDB': {name: 'liblmdb-dev'},
+        'Ldap': {name: 'libldap2-dev'},
+        'LibArchive': {name: 'libarchive-dev'},
+        'LibAttica': {name: 'libattica-dev'},
+        'LibGcrypt': {name: 'libgcrypt20-dev'},
+        'LibGit2': {name: 'libgit2-dev'},
+        'LibIcal': {name: 'libical-dev'},
+        'LibIntl': None,  # build-essential
+        'LibKEduVocDocument': {name: 'libkeduvocdocument-dev'},
+        'LibKFbAPI': None,  # facebook api, not packaged
+        'LibKGAPI2': {name: 'libkgapi-dev'},
+        'LibKMahjongg': {name: 'libkmahjongglib-dev'},
+        'LibKScreen': {name: 'libkscreen-dev'},
+        'LibKWorkspace': {name: 'plasma-workspace-dev'},
+        'LibKompareDiff2': {name: 'libkomparediff2-dev'},
+        'LibLZMA': {name: 'liblzma-dev'},
+        'LibMeanwhile': {name: 'libmeanwhile-dev'},
+        'LibOTR': {name: 'libotr5-dev'},
+        'LibRaw': {name: 'libraw-dev'},
+        'LibSSH': {name: 'libssh-dev'},
+        'LibSpectre': {name: 'libspectre-dev'},
+        'LibTaskManager': {name: 'plasma-workspace-dev'},
+        'LibTidy': {name: 'libtidy-dev'},
+        'LibV4L2': {name: 'libv4l-dev'},
+        'LibVNCServer': {name: 'libvncserver-dev'},
+        'LibXml2': {name: 'libxml2-dev'},
+        'LibXslt': {name: 'libxslt1-dev'},
+        'Libcap': {name: 'libcap-dev'},
+        'Libdrm': {name: 'libdrm-dev'},
+        'Libgadu': {name: 'libgadu-dev'},
+        'Libgcrypt': {name: 'libgcrypt20-dev'},
+        'Libical': {name: 'libical-dev'},
+        'Libinput': {name: 'libinput-dev'},
+        'Libintl': None,  # build-essential
+        'Libkcddb': {name: 'libkcddb-dev'},
+        'Libkcompactdisc': {name: 'libkcompactdisc-dev'},
+        'Libkolab': {name: 'libkolab-dev'},
+        'Libkolabxml': {name: 'libkolabxml-dev'},
+        'Libmsn': {name: 'libmsn-dev'},
+        'LiboRTP': {name: 'libortp-dev'},
+        'LuaJIT': {name: 'libluajit-5.1-dev'},
+        'MLT': {name: 'libmlt-dev'},
+        'Marble': {name: 'libmarble-dev', epoch: 4},
+        'MarbleWidget': {name: 'libmarble-dev', epoch: 4},
+        'Mediastreamer': {name: 'libmediastreamer-dev'},
+        'MobileBroadbandProviderInfo': {name: 'mobile-broadband-provider-info'},
+        'ModemManager': {name: 'modemmanager-dev'},
+        'Mtp': {name: 'libmtp-dev'},
+        'MusicBrainz3': {name: 'libmusicbrainz3-dev'},
+        'MusicBrainz5': {name: 'libmusicbrainz5-dev'},
+        'Nova': {name: 'libnova-dev'},
+        'NepomukCore': None,  # Trying to get rid of it
+        'NetworkManager': {name: 'network-manager-dev'},
+        'OpenAL': {name: 'libopenal-dev'},
+        'OpenCVcore': {name: 'libopencv-core-dev'},
+        'OpenCVhighgui': {name: 'libopencv-highgui-dev'},
+        'OpenCVimgproc': {name: 'libopencv-imgproc-dev'},
+        'OpenConnect': {name: 'libopenconnect-dev'},
+        'OpenEXR': {name: 'libopenexr-dev'},
+        'OpenGL': {name: 'libgl1-mesa-dev'},
+        'OpenGLES': {name: 'libgl1-mesa-dev'},  # Not needed, use mesa instead
+        'OpenSSL': {name: 'libssl-dev'},
+        'OxygenFont': {name: 'fonts-oxygen'},
+        'PAM': {name: 'libpam0g-dev'},
+        'PCIUTILS': {name: 'libpci-dev'},
+        'PCRE': {name: 'libpcre3-dev'},
+        'PNG': {name: 'libpng12-dev'},
+        'PWQuality': {name: 'libpwquality-dev'},
+        'PackageKitQt5': None,  # Not packaged
+        'Perl': {name: 'perl'},
+        'Phonon': {name: 'libphonon4qt5-dev'},
+        'Phonon4Qt5': {name: 'libphonon4qt5-dev'},
+        'PkgConfig': {name: 'pkg-config'},
+        'PolkitQt5-10.103.0': {name: 'libpolkit-qt5-1-dev'},
+        'Poppler': {name: 'libpoppler-qt4-dev'},
+        'PopplerQt5': {name: 'libpoppler-qt5-dev'},
+        'Prison': {name: 'libprison-dev'},
+        'Protobuf': {name: 'libprotobuf-dev'},
+        'PulseAudio': {name: 'libpulse-dev'},
+        'PyQt4': None,  # Done with qt4
+        'PythonInterp': {name: 'python'},
+        'PythonLibrary': {name: 'python-dev'},
+        'PythonLibs': {name: 'python-dev'},
+        'PythonLibs3': {name: 'python3-dev'},
+        'QApt': {name: 'libqapt-dev'},
+        'QCA2': {name: 'libqca2-dev'},
+        'QCollectionGenerator': {name: 'qttools5-dev-tools'},
+        'QGpgme': {name: 'kdepimlibs5-dev', epoch: 4},
+        'QImageBlitz': {name: 'libqimageblitz-dev', epoch: 1},
+        'QJSON': {name: 'libqjson-dev'},
+        'QMobipocket': {name: 'libqmobipocket-dev'},
+        'QNtrack': None,  # not packaged
+        'Qalculate': {name: 'libqalculate-dev'},
+        'Qca-qt5': {name: 'libqca-qt5-2-dev'},
+        'Qca-qt5-ossl': {name: 'libqca-qt5-2-plugins'},
+        'QextSerialPort': {name: 'libqextserialport-dev'},
+        'Qt4': None,  # {name: 'libqt4-dev'},
+        'Qt5': {name: 'qtbase5-dev'},
+        'Qt5Concurrent': {name: 'qtbase5-dev'},
+        'Qt5Core': {name: 'qtbase5-dev'},
+        'Qt5DBus': None,  # {name: 'qtbase5-dev'}, Apparently not
+        'Qt5Declarative': {name: 'qtdeclarative5-dev'},
+        'Qt5Designer': {name: 'qttools5-dev'},
+        'Qt5Gui': {name: 'qtbase5-dev'},
+        'Qt5LinguistTools': {name: 'qttools5-dev-tools'},
+        'Qt5Location': {name: 'qtlocation5-dev'},
+        'Qt5Multimedia': {name: 'qtmultimedia5-dev'},
+        'Qt5Network': {name: 'qtbase5-dev'},
+        'Qt5OpenGL': {name: 'libqt5opengl5-dev'},
+        'Qt5PlatformSupport': {name: 'qtbase5-private-dev'},
+        'Qt5Positioning': {name: 'qtpositioning5-dev'},
+        'Qt5PrintSupport': {name: 'qtbase5-dev'},
+        'Qt5Qml': {name: 'qtdeclarative5-dev'},
+        'Qt5Quick': {name: 'qtdeclarative5-dev'},
+        'Qt5QuickTest': {name: 'qtdeclarative5-dev'},
+        'Qt5QuickWidgets': {name: 'qtdeclarative5-dev'},
+        'Qt5Script': {name: 'qtscript5-dev'},
+        'Qt5ScriptTools': {name: 'qtscript5-dev'},
+        'Qt5Sql': {name: 'qtbase5-dev'},
+        'Qt5Svg': {name: 'libqt5svg5-dev'},
+        'Qt5Test': {name: 'qtbase5-dev'},
+        'Qt5TextToSpeech': None,  # qtspeech not packaged, uses qt5.5 see github/qtproject/qtspeech
+        'Qt5UiTools': {name: 'qttools5-dev'},
+        'Qt5WebKit': {name: 'libqt5webkit5-dev'},
+        'Qt5WebKitWidgets': {name: 'libqt5webkit5-dev'},
+        'Qt5Widgets': {name: 'qtbase5-dev'},
+        'Qt5WinExtras': None,  # qt5 windows extras
+        'Qt5X11Extras': {name: 'libqt5x11extras5-dev'},
+        'Qt5Xml': {name: 'qtbase5-dev'},
+        'Qt5XmlPatterns': {name: 'libqt5xmlpatterns5-dev'},
+        'QtDeclarative': {name: 'qtdeclarative5-dev'},
+        'QtGStreamer': {name: 'libqtgstreamer-dev'},
+        'QtLocation': {name: 'qtlocation5-dev'},
+        'R': {name: 'r-base-core'},
+        'RAW1394': {name: 'libraw1394-dev'},
+        'Readline': {name: 'libreadline-dev'},
+        'SCIM': {name: 'scim-dev'},
+        'SIP': {name: 'sip-dev'},
+        'SLP': {name: 'libslp-dev'},
+        'SRTP': {name: 'libsrtp0-dev'},
+        'SVN': {name: 'libsvn-dev'},
+        'Samba': {name: 'libsmbclient-dev'},
+        'Sane': {name: 'sane-dev'},
+        'Sasl2': {name: 'libsasl2-dev'},
+        'ScreenSaverDBusInterface': {name: 'plasma-workspace-dev'},
+        'Sensors': {name: 'libsensors4-dev'},
+        'SharedDesktopOntologies': {name: 'shared-desktop-ontologies'},
+        'SharedMimeInfo': {name: 'shared-mime-info'},
+        'SignOnExtension': {name: 'signond-dev'},
+        'SignOnQt': {name: 'libsignon-qt-dev'},
+        'SignOnQt5': {name: 'libsignon-qt5-dev'},
+        'SndFile': {name: 'libsndfile1-dev'},
+        'Soprano': {name: 'libsoprano-dev'},
+        'Speechd': {name: 'libspeechd-dev'},
+        'Sphinx': {name: 'python-sphinx'},
+        'Sqlite': {name: 'libsqlite3-dev'},
+        'Strigi': None,  # Removed from most of the kf5 versions
+        'SubversionLibrary': {name: 'libsvn-dev'},
+        'Synaptics': {name: 'xserver-xorg-input-synaptics-dev'},
+        'TIFF': {name: 'libtiff-dev'},
+        'Taglib': {name: 'libtag1-dev'},
+        'TelepathyGlib': {name: 'libtelepathy-glib-dev'},
+        'TelepathyLogger': {name: 'libtelepathy-logger-dev'},
+        'TelepathyLoggerQt': {name: 'libtelepathy-logger-qt-dev'},
+        'TelepathyQt4': {name: 'libtelepathy-qt4-dev'},
+        'TelepathyQt5': {name: 'libtelepathy-qt5-dev'},
+        'TelepathyQt5Service': {name: 'libtelepathy-qt5-dev'},
+        'Threads': None,  # pthreads in libc6-dev, which is build essential
+        'Twisted': {name: 'python-twisted-core'},
+        'UDev': {name: 'libudev-dev'},
+        'USB': {name: 'libusb-1.0-0-dev'},
+        'USB-1': {name: 'libusb-1.0-0-dev'},
+        'UTEMPTER': {name: 'libutempter-dev'},
+        'VOIKKO': {name: 'libvoikko-dev'},
+        'WCSLIB': {name: 'wcslib-dev'},
+        'WaylandClient': {name: 'libwayland-dev'},
+        'WaylandCursor': {name: 'libwayland-dev'},
+        'WaylandEgl': {name: 'libegl1-mesa-dev'},
+        'WaylandScanner': {name: 'libwayland-dev'},
+        'WaylandServer': {name: 'libwayland-dev'},
+        'X11': {name: 'libx11-dev'},
+        'X11_XCB': {name: 'libx11-xcb-dev'},
+        'XCB': {name: 'libxcb1-dev'},
+        'XCBCOMPOSITE': {name: 'libxcb-composite0-dev'},
+        'XCBCURSOR': {name: 'libxcb-cursor-dev'},
+        'XCBDAMAGE': {name: 'libxcb-damage0-dev'},
+        'XCBDPMS': {name: 'libxcb-dpms0-dev'},
+        'XCBGLX': {name: 'libxcb-glx0-dev'},
+        'XCBICCCM': {name: 'libxcb-icccm4-dev'},
+        'XCBIMAGE': {name: 'libxcb-image0-dev'},
+        'XCBKEYSYMS': {name: 'libxcb-keysyms1-dev'},
+        'XCBRANDR': {name: 'libxcb-randr0-dev'},
+        'XCBRENDER': {name: 'libxcb-render0-dev'},
+        'XCBSHAPE': {name: 'libxcb-shape0-dev'},
+        'XCBSHM': {name: 'libxcb-shm0-dev'},
+        'XCBSYNC': {name: 'libxcb-sync-dev'},
+        'XCBUTIL': {name: 'libxcb-util0-dev'},
+        'XCBXCB': {name: 'libxcb1-dev'},
+        'XCBXFIXES': {name: 'libxcb-xfixes0-dev'},
+        'XCBXINPUT': {name: 'libxi-dev'},
+        'XCBXKB': {name: 'libxcb-xkb-dev'},
+        'XCBXTEST': {name: 'libxcb-xtest0-dev'},
+        'XKB': {name: 'libxkbcommon-dev'},
+        'XMMS': None,  # version is still around, someone uses it?
+        'Xapian': {name: 'libxapian-dev'},
+        'Xplanet': {name: 'xplanet'},
+        'Xsltproc': {name: 'xsltproc'},
+        'ZLIB': {name: 'zlib1g-dev'},
+        'cmake': {name: 'cmake'},
+        'dbusmenu-qt5': {name: 'libdbusmenu-qt5-dev'},
+        'epoxy': {name: 'libepoxy-dev'},
+        'gbm': {name: 'libgbm-dev'},
+        'libgps': {name: 'libgps-dev'},
+        'libhybris': None,  # Not packaged yet
+        'liblocation': None,  # Not packaged yet
+        'libshp': {name: 'libshp-dev'},
+        'libwlocate': None,  # Not packaged yet
+        'mockcpp': None,  # Not packaged yet
+        'packagekitqt5': None,  # Not packaged
+        'quazip': {name: 'libquazip-qt5-dev'},
+        'telepathy-accounts-signon': {name: 'libsignon-qt5-dev'},
+    }
+
+    def process(self, requirements):
+        needed = {}
+        optional = {}
+        not_found = {}
+        for name, dependency in requirements.items():
+            kwargs = self.known.get(name, not_found)
+            if kwargs is not_found:
+                not_found[name] = dependency
+                continue
+            elif kwargs is None:
+                # Not in Debian
+                continue
+
+            dname = kwargs['name']
+
+            if dependency.required:
+                if ((dname not in needed) or
+                        (dependency.required > needed[dname].uversion)):
+                    kwargs['uversion'] = dependency.required
+                    needed[dname] = DebPackageInfo(**kwargs)
+
+            if ((not dependency.required) or
+                (dependency.optional and
+                    dependency.optional >= dependency.required)):
+                if dependency.optional:
+                    kwargs['uversion'] = dependency.optional
+
+                if ((dname not in optional) or
+                        (dependency.optional > optional[dname].uversion)):
+                    optional[dname] = DebPackageInfo(**kwargs)
+
+        for name in needed:
+            if name in optional and \
+               needed[name].uversion >= optional[name].uversion:
+                del optional[name]
+
+        if not_found:
+            print('Not known packages:')
+            for item in sorted(not_found.values()):
+                print(item)
+        if needed:
+            print('Needed build-deps:')
+            for item in sorted(needed.values()):
+                print(item)
+        if optional:
+            print('Optional build-deps:')
+            for item in sorted(optional.values()):
+                print(item)
+
+        self.needed = needed
+        self.optional = optional
+
+
+def get_blacklist(package_dir):
+    cmd = ['dh_listpackages']
+    output = subprocess.check_output(cmd, cwd=package_dir).decode('utf8')
+
+    return set(output.split())
+
+
+def update_field(section, field, fun, reqs, blacklist):
+    value = section.get(field)
+    if not value:
+        return 0
+    rels = deb822.PkgRelation.parse_relations(value)
+    changes = fun(rels, reqs, blacklist)
+    if changes:
+        section[field] = deb822.PkgRelation.str(rels)
+    return changes
+
+
+def add_required(rels, reqs, blacklist):
+    found = set()
+    changes = 0
+    for rel in rels:
+        for item in rel:
+            found.add(item['name'])
+    for req in reqs.needed:
+        if req in found:
+            continue
+        if req in blacklist:
+            continue
+        item = {
+            'name': req,
+            'version': None,
+            'arch': None,
+            'archqual': None,
+            'restrictions': None,
+        }
+        rels.append([item])
+        changes += 1
+    return changes
+
+
+def check_req_version(item, req_dict):
+    name = item['name']
+    if '$' in name:
+        # subst var, leave alone
+        return 0
+    if name not in req_dict:
+        return 0
+    req_version = req_dict[name].debian_version()
+    if not req_version:
+        return 0
+
+    if not item['version']:
+        item['version'] = ('>=', req_version)
+        return 1
+
+    cur_version = item['version'][1]
+    if cur_version.startswith('$'):
+        # subst var, leave alone
+        return 0
+
+    if debian_support.version_compare(cur_version, req_version) < 0:
+        item['version'] = ('>=', req_version)
+        return 1
+    return 0
+
+
+def bump_versions(rels, reqs, blacklist):
+
+    changes = 0
+    for rel in rels:
+        for item in rel:
+            for req_dict in reqs.needed, reqs.optional:
+                changes += check_req_version(item, req_dict)
+    return changes
+
+
+def update_control(filename, reqs, blacklist):
+
+    control_file = open(filename)
+    changes = 0
+
+    with tempfile.NamedTemporaryFile() as tmpfile:
+        for i, section in enumerate(
+                deb822.Deb822.iter_paragraphs(control_file)):
+            if i:
+                tmpfile.write(b'\n')
+            if i == 0:
+                changes += update_field(section, 'Build-Depends',
+                                        add_required, reqs, blacklist)
+
+            for field in ('Build-Depends', 'Build-Depends-Indep', 'Depends',
+                          'Recommends', 'Suggests'):
+                changes += update_field(section, field, bump_versions, reqs,
+                                        blacklist)
+
+            section.dump(tmpfile)
+        if changes:
+            tmpfile.flush()
+            shutil.copyfile(tmpfile.name, filename)
+
+
+def process_options():
+
+    kw = {
+        'format': '[%(levelname)s] %(message)s',
+    }
+
+    arg_parser = argparse.ArgumentParser(
+        description='Update debian control files from cmake information.')
+    arg_parser.add_argument('--no-act', action='store_true')
+    arg_parser.add_argument('-c', '--control', default='debian/control')
+    arg_parser.add_argument('-d', '--package-dir', default='.')
+    arg_parser.add_argument('--debug', default=False)
+    arg_parser.add_argument('cmake_files', nargs='*',
+                            default=['CMakeLists.txt'])
+    args = arg_parser.parse_args()
+
+    if args.debug:
+        kw['level'] = logging.DEBUG
+
+    logging.basicConfig(**kw)
+
+    return args
+
+
+def commit(options):
+    def changes():
+        status = subprocess.check_output(
+            ['git', 'status', '--porcelain'], cwd=options.package_dir,
+            universal_newlines=True)
+        return status.strip()
+
+    def wrap_and_sort(filename=None):
+        cmd = ['wrap-and-sort']
+        if filename:
+            cmd.extend(['-f', filename])
+        subprocess.call(cmd, cwd=options.package_dir)
+
+    if not changes():
+        return
+    wrap_and_sort(options.control)
+    if not changes():
+        return
+
+    subprocess.call(['git', 'add', options.control], cwd=options.package_dir)
+    subprocess.call(['git', 'commit', '-m',
+                     'Update build-deps and deps with the info from cmake'],
+                    cwd=options.package_dir)
+
+
+def main():
+    options = process_options()
+    parser = CMakeParser(debug=options.debug)
+
+    for cmake_file in options.cmake_files:
+        if not os.path.exists(cmake_file):
+            logging.warn(
+                'File: {} not found, not cmake based project?'.format(
+                    cmake_file))
+            continue
+        parser.run_file(cmake_file)
+
+    debianizer = ReqToDebianPkg()
+    debianizer.process(parser.requirements)
+
+    blacklist = get_blacklist(options.package_dir)
+
+    if not options.no_act:
+        update_control(options.control, debianizer, blacklist)
+
+        commit(options)
+
+
+if __name__ == '__main__':
+    main()

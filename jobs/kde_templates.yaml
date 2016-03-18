@@ -101,6 +101,10 @@
     builders:
         - shell:
             !include-raw-escape: prepare_build.sh
+    publishers:
+        - clone-workspace:
+            criteria: "not failed"
+            workspace-glob: "**"
 
 - job-template:
     name: '{item}_build_{arch}'
@@ -126,7 +130,7 @@
             criteria: 'Not Failed'
     builders:
         - shell:
-            !include-raw-escape: build_build.sh
+            !include-raw: build_build.sh
 
 - job-template:
     name: '{item}_publish'

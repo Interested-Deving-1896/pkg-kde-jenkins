@@ -1,81 +1,53 @@
 #!/bin/sh
-
+# single braces reference to the template vars, use double braces to espace
+# them
 set -x
 set -e
-
-set
-
-exit 1
-
-
-expand_tag () {
-    # TODO: The upstream tag format should be configurable
-    local upstream_tag_format='v%(version)s'
-    local version
-    if [ $# -lt 1 ]; then
-        echo "${upstream_tag_format}"
-        return
-    fi
-    version="$1"
-    python -c "print '${upstream_tag_format}' % {'version': '${version}'}"
-}
-tag_to_version () {
-    echo ${1#v}
-}
 
 export_dir="$(pwd)/build"
 repo_dir="$(pwd)/repo"
 
-echo "Clean build directory"
-rm -rf "${export_dir}"
-
-echo "Add a snapshot changelog entry"
-cd "${repo_dir}"
+echo "Get the build information"
+cd "$repo_dir"
 source_name=$(dpkg-parsechangelog -S source)
-# TODO: Detect native packages
 version=$(dpkg-parsechangelog -S version)
-epochless_version=${version##*:}
-upstream_version=${epochless_version%%-*}
-# TODO: What about dfsg tags?
-upstream_tag=$(expand_tag "${upstream_version}")
+epochless_version=${{version##*:}}
 
-DCH="gbp dch"
-DCH_ARGS="--verbose --snapshot --upstream-tag='$(expand_tag)' --commit"
+distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
+arch='{arch}'
 
-# ignore the "unstable" (*.*.80 + as well as the rc, alpha and beta tags) releases
-release_tag=$(git tag --sort='version:refname' -l "$(expand_tag '*')" | \
-    sed -n -r '
-/([89][0-9]+|(rc|alpha|beta)[0-9]*)$/d
-/^'"${upstream_tag}"'$/,$ {
-    /^'"${upstream_tag}"'$/d
-    p
-}' | tail -1)
+echo "Call pre-build hooks"
+cd "$repo_dir"
 
-if [ -n "${release_tag}" ]; then
-    if ! git diff --quiet "${upstream_tag}" "${release_tag}"; then
-        new_upstream_release="$(tag_to_version ${release_tag})"
-        new_version="${new_upstream_release}-1"
-        if [ "${version%%:*}" != "${version}" ]; then
-            new_version="${version%%:*}:${new_version}"
-        fi
-        DCH_ARGS="${DCH_ARGS} --new-version=${new_version}"
-
-    fi
+hooks_dir='/srv/pkg-kde-jenkins/hooks/pre-build'
+if [ -d "$hooks_dir" ]; then
+    run-parts --exit-on-error "$hooks_dir"
 fi
 
-${DCH} ${DCH_ARGS}
+echo "Build it"
+cd "$export_dir"
+dsc_file="${{source_name}}_${{epochless_version}}.dsc"
+chroot="$distribution-$arch-sbuild"
 
-echo "Call prepare hooks"
+SBUILD_ARGS="--verbose"
+if [ "$arch" = "amd64" ]; then
+    SBUILD_ARGS="$SBUILD_ARGS --arch-all"
+fi
+sbuild --dist="$distribution" --arch="$arch" --chroot="$chroot" $SBUILD_ARGS \
+    "$dsc_file"
 
-hooks_dir='/srv/pkg-kde-jenkins/hooks/prepare'
-if [ -d "${hooks_dir}" ]; then
-    run-parts --exit-on-error "${hooks_dir}"
+echo "Call post-build hooks"
+cd "$repo_dir"
+
+hooks_dir='/srv/pkg-kde-jenkins/hooks/post-build'
+if [ -d "$hooks_dir" ]; then
+    run-parts --exit-on-error "$hooks_dir"
 fi
 
-echo "Prepare source package"
-cd "${repo_dir}"
-gbp buildpackage --git-verbose --git-upstream-tag="$(expand_tag)" \
-    --git-export-dir="${export_dir}" --git-overlay -S -us -uc
+echo "Local upload"
+cd "$export_dir"
 
-cd "${export_dir}"
-dput -u local "${source_name}_${epochless_version}_source.changes"
+# Fix permissions
+find -maxdepth 1 -type f -exec chmod 0644 '{{}}' '+'
+changes_file="${{source_name}}_${{epochless_version}}_${{arch}}.changes"
+dput -u local "$changes_file"

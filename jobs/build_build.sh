@@ -13,8 +13,16 @@ source_name=$(dpkg-parsechangelog -S source)
 version=$(dpkg-parsechangelog -S version)
 epochless_version=${{version##*:}}
 
+# TODO: Detect target distribution or use DEP14
 distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
+if [ "$distribution" = "unreleased" ]; then
+    distribution="unstable"
+fi
 arch='{arch}'
+
+# TODO: Hide this in a config file
+local_repository='deb [trusted=yes] https://freak.gnuservers.com.ar/~maxy/debian/ '"$distribution"' main'
+
 
 echo "Call pre-build hooks"
 cd "$repo_dir"
@@ -34,7 +42,7 @@ if [ "$arch" = "amd64" ]; then
     SBUILD_ARGS="$SBUILD_ARGS --arch-all"
 fi
 sbuild --dist="$distribution" --arch="$arch" --chroot="$chroot" $SBUILD_ARGS \
-    "$dsc_file"
+    --extra-repository="$local_repository" "$dsc_file"
 
 echo "Call post-build hooks"
 cd "$repo_dir"

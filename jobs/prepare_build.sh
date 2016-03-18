@@ -1,5 +1,6 @@
 #!/bin/sh
 
+set -x
 set -e
 
 expand_tag () {
@@ -33,6 +34,11 @@ epochless_version=${version##*:}
 upstream_version=${epochless_version%%-*}
 # TODO: What about dfsg tags?
 upstream_tag=$(expand_tag "${upstream_version}")
+# TODO: Detect target distribution or use DEP14
+distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
+if [ "$distribution" = "unreleased" ]; then
+    distribution="unstable"
+fi
 
 DCH="gbp dch"
 DCH_ARGS="--verbose --snapshot --upstream-tag='$(expand_tag)' --commit"
@@ -78,7 +84,8 @@ fi
 echo "Prepare source package"
 cd "${repo_dir}"
 gbp buildpackage --git-verbose --git-upstream-tag="$(expand_tag)" \
-    --git-export-dir="${export_dir}" --git-overlay -S -us -uc
+    --git-export-dir="${export_dir}" --git-dist="${distribution}" \
+    --git-overlay -S -us -uc
 
 version=$(dpkg-parsechangelog -S version)
 epochless_version=${version##*:}

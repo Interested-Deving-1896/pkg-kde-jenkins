@@ -21,7 +21,7 @@ fi
 arch='{arch}'
 
 # TODO: Hide this in a config file
-local_repository='deb [trusted=yes] https://freak.gnuservers.com.ar/~maxy/debian/ '"$distribution"' main'
+local_repository='deb [trusted=yes] http://freak.gnuservers.com.ar/~maxy/debian/ '"$distribution"' main'
 
 
 echo "Call pre-build hooks"

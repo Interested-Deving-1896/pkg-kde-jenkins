@@ -19,6 +19,7 @@ tag_to_version () {
 
 export_dir="$(pwd)/build"
 repo_dir="$(pwd)/repo"
+upstream_dir="$(pwd)/upstream"
 
 echo "Clean build directory"
 rm -rf "${export_dir}"
@@ -53,11 +54,19 @@ if [ -n "${release_tag}" ]; then
             new_version="${version%%:*}:${new_version}"
         fi
         DCH_ARGS="${DCH_ARGS} --new-version=${new_version}"
-
+        upstream_tag="${release_tag}"
     fi
 fi
 
 ${DCH} ${DCH_ARGS}
+
+echo "Prepare upstream worktree"
+
+if [ -d "${upstream_dir}" ]; then
+    rm -rf "${upstream_dir}"
+    git worktree prune
+fi
+git worktree add "${upstream_dir}" "${upstream_tag}"
 
 echo "Call prepare hooks"
 

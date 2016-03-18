@@ -1375,7 +1375,8 @@ def process_options():
         description='Update debian control files from cmake information.')
     arg_parser.add_argument('--no-act', action='store_true')
     arg_parser.add_argument('-c', '--control', default='debian/control')
-    arg_parser.add_argument('-d', '--package-dir', default='.')
+    arg_parser.add_argument('-d', '--package-dir', default='repo')
+    arg_parser.add_argument('-u', '--upstream-dir', default='upstream')
     arg_parser.add_argument('--debug', default=False)
     arg_parser.add_argument('cmake_files', nargs='*',
                             default=['CMakeLists.txt'])
@@ -1419,12 +1420,13 @@ def main():
     parser = CMakeParser(debug=options.debug)
 
     for cmake_file in options.cmake_files:
-        if not os.path.exists(cmake_file):
+        full_path = os.path.join(options.upstream_dir, cmake_file)
+        if not os.path.exists(full_path):
             logging.warn(
                 'File: {} not found, not cmake based project?'.format(
-                    cmake_file))
+                    full_path))
             continue
-        parser.run_file(cmake_file)
+        parser.run_file(full_path)
 
     debianizer = ReqToDebianPkg()
     debianizer.process(parser.requirements)
@@ -1432,7 +1434,8 @@ def main():
     blacklist = get_blacklist(options.package_dir)
 
     if not options.no_act:
-        update_control(options.control, debianizer, blacklist)
+        control_file = os.path.join(options.package_dir, options.control)
+        update_control(control_file, debianizer, blacklist)
 
         commit(options)
 

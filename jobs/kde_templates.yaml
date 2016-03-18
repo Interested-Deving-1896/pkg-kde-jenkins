@@ -64,19 +64,6 @@
 - job-template:
     name: '{item}_prepare'
     description: '{description} -- Prepare'
-    publishers:
-        - trigger:
-            project: '{item}_build_amd64'
-            threshold: UNSTABLE
-        - trigger:
-            project: '{item}_build_i386'
-            threshold: UNSTABLE
-        - trigger:
-            project: '{item}_build_armhf'
-            threshold: UNSTABLE
-        - trigger:
-            project: '{item}_build_armel'
-            threshold: UNSTABLE
     scm:
         - git:
             url: '{debian_vcs}'
@@ -102,6 +89,18 @@
         - shell:
             !include-raw-escape: prepare_build.sh
     publishers:
+        - trigger:
+            project: '{item}_build_amd64'
+            threshold: UNSTABLE
+        - trigger:
+            project: '{item}_build_i386'
+            threshold: UNSTABLE
+        - trigger:
+            project: '{item}_build_armhf'
+            threshold: UNSTABLE
+        - trigger:
+            project: '{item}_build_armel'
+            threshold: UNSTABLE
         - clone-workspace:
             criteria: "not failed"
             workspace-glob: "**"

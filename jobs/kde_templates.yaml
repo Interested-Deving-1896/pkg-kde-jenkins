@@ -131,6 +131,9 @@
                   - clone-workspace:
                       criteria: "not failed"
                       workspace-glob: "**"
+        - archive:
+            artifacts: 'build/*.build'
+    # Needs the clone workspace scm plugin
     scm:
         - workspace:
             parent-job: '{item}_prepare'
@@ -166,3 +169,8 @@
     builders:
         - shell:
             !include-raw: test_build.sh
+    publishers:
+        - archive:
+            artifacts: 'build/**log'
+        - junit:
+            results: 'build/*.xml'

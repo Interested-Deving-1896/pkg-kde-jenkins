@@ -7,11 +7,6 @@ export_dir="$(pwd)/build"
 repo_dir="$(pwd)/repo"
 # Provided by jenkins
 arch='{arch}'
-# TODO: Detect target distribution or use DEP14
-distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
-if [ "$distribution" = "unreleased" ]; then
-    distribution="unstable"
-fi
 
 echo "Get the information"
 
@@ -21,6 +16,11 @@ epochless_version=${{version##*:}}
 source_name=$(dpkg-parsechangelog -S source)
 source_changes="$export_dir/${{source_name}}_${{epochless_version}}_source.changes"
 arch_changes="$export_dir/${{source_name}}_${{epochless_version}}_$arch.changes"
+# TODO: Detect target distribution or use DEP14
+distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
+if [ "$distribution" = "unreleased" ]; then
+    distribution="unstable"
+fi
 
 echo "Call pre-test hooks"
 

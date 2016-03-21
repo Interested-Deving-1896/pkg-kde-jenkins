@@ -157,6 +157,7 @@
 - job-template:
     name: '{item}_test'
     description: '{description} -- Test'
+    block-upstream: false
     triggers:
         - reverse:
             jobs: '{obj:dependencies}'

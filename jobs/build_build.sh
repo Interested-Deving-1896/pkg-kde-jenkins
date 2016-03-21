@@ -1,7 +1,6 @@
 #!/bin/sh
-# single braces reference to the template vars, use double braces to espace
+# single braces reference to the template vars, use double braces to space
 # them
-set -x
 set -e
 
 export_dir="$(pwd)/build"
@@ -22,7 +21,6 @@ arch='{arch}'
 
 # TODO: Hide this in a config file
 local_repository='deb [trusted=yes] http://freak.gnuservers.com.ar/~maxy/debian/ '"$distribution"' main'
-
 
 echo "Call pre-build hooks"
 cd "$repo_dir"

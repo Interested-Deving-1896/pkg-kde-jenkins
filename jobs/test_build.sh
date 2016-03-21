@@ -1,4 +1,7 @@
 #!/bin/sh
+# single braces reference to the template vars, use double braces to space
+# them
+set -e
 
 export_dir="$(pwd)/build"
 repo_dir="$(pwd)/repo"

@@ -80,11 +80,11 @@
             skip-tag: true
     triggers:
         - pollscm:
-            cron: '* * * * *'
+            cron: 'H * * * *'
         - script:
             script:
                 !include-raw-escape: prepare_trigger.sh
-            cron: '* * * * *'
+            cron: 'H H/6 * * *'
     builders:
         - shell:
             !include-raw-escape: prepare_build.sh

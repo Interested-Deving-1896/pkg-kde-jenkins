@@ -34,11 +34,6 @@ epochless_version=${version##*:}
 upstream_version=${epochless_version%%-*}
 # TODO: What about dfsg tags?
 upstream_tag=$(expand_tag "${upstream_version}")
-# TODO: Detect target distribution or use DEP14
-distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
-if [ "$distribution" = "unreleased" ]; then
-    distribution="unstable"
-fi
 
 DCH="gbp dch"
 DCH_ARGS="--verbose --snapshot --upstream-tag='$(expand_tag)' --commit"
@@ -65,6 +60,12 @@ if [ -n "${release_tag}" ]; then
 fi
 
 ${DCH} ${DCH_ARGS}
+
+# TODO: Detect target distribution or use DEP14
+distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
+if [ "$distribution" = "unreleased" ]; then
+    distribution="unstable"
+fi
 
 echo "Prepare upstream worktree"
 

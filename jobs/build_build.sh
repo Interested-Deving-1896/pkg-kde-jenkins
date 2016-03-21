@@ -57,3 +57,9 @@ cd "$export_dir"
 find -maxdepth 1 -type f -exec chmod 0644 '{{}}' '+'
 changes_file="${{source_name}}_${{epochless_version}}_${{arch}}.changes"
 dput -u local "$changes_file"
+
+# Remove build symlink due to a bug in the clone scm plugin
+buildlog_link=$(find -type l -name '*.build')
+buildlog_real=$(readlink "$buildlog_link")
+rm "$buildlog_link"
+mv "$buildlog_real" "$buildlog_link"

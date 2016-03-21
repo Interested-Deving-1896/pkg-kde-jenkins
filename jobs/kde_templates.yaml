@@ -104,6 +104,7 @@
         - trigger:
             project: '{item}_build_armel'
             threshold: UNSTABLE
+        # Needs the clone workspace scm plugin
         - clone-workspace:
             criteria: "not failed"
             workspace-glob: "**"
@@ -126,6 +127,7 @@
                   - trigger:
                       project: '{item}_test'
                       threshold: UNSTABLE
+                  # Needs the clone workspace scm plugin
                   - clone-workspace:
                       criteria: "not failed"
                       workspace-glob: "**"
@@ -156,6 +158,7 @@
         - reverse:
             jobs: '{obj:dependencies}'
             result: 'unstable'
+    # Needs the clone workspace scm plugin
     scm:
         - workspace:
             parent-job: '{item}_build_{arch}'

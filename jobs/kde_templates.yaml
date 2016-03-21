@@ -11,6 +11,7 @@
         - '{item}_publish'
         - '{item}_test':
             dependencies: '{obj:test_dependencies}'
+            arch: amd64
     dependencies: '{obj:build_dependencies}'
     description: '{description}'
     debian_vcs: '{debian_vcs}'
@@ -29,6 +30,7 @@
         - '{item}_publish'
         - '{item}_test':
             dependencies: '{obj:test_dependencies}'
+            arch: amd64
     dependencies: '{obj:build_dependencies}'
     description: '{description}'
     debian_vcs: '{debian_vcs}'
@@ -47,6 +49,7 @@
         - '{item}_publish'
         - '{item}_test':
             dependencies: '{obj:test_dependencies}'
+            arch: amd64
     dependencies: '{obj:build_dependencies}'
     description: '{description}'
     debian_vcs: '{debian_vcs}'
@@ -123,6 +126,9 @@
                   - trigger:
                       project: '{item}_test'
                       threshold: UNSTABLE
+                  - clone-workspace:
+                      criteria: "not failed"
+                      workspace-glob: "**"
     scm:
         - workspace:
             parent-job: '{item}_prepare'
@@ -150,3 +156,10 @@
         - reverse:
             jobs: '{obj:dependencies}'
             result: 'unstable'
+    scm:
+        - workspace:
+            parent-job: '{item}_build_{arch}'
+            criteria: 'Not Failed'
+    builders:
+        - shell:
+            !include-raw: test_build.sh

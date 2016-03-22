@@ -62,7 +62,7 @@
     block-upstream: true
     retry-count: 3
     logrotate:
-        daystokeep: 7
+        daysToKeep: 7
 
 - job-template:
     name: '{item}_prepare'

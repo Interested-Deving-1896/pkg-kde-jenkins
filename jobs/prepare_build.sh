@@ -33,8 +33,8 @@ if ! git show-ref --verify --quiet refs/remotes/local/master; then
 else
     git merge refs/remotes/local/master
 fi
-git fetch --all
 git remote set-branches --add local master
+git fetch --all
 git branch --set-upstream-to=local/master
 
 echo "Add a snapshot changelog entry"

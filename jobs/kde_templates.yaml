@@ -13,6 +13,7 @@
             arch: amd64
     dependencies: '{obj:build_dependencies}'
     description: '{description}'
+    local_vcs: '{local_vcs}'
     debian_vcs: '{debian_vcs}'
     upstream_vcs: '{upstream_vcs}'
 
@@ -50,6 +51,7 @@
             arch: amd64
     dependencies: '{obj:build_dependencies}'
     description: '{description}'
+    local_vcs: '{local_vcs}'
     debian_vcs: '{debian_vcs}'
     upstream_vcs: '{upstream_vcs}'
 
@@ -97,14 +99,29 @@
         - trigger:
             project: '{item}_build'
             threshold: UNSTABLE
-        # Needs the clone workspace scm plugin
-        - clone-workspace:
-            criteria: "not failed"
-            workspace-glob: "**"
+        - archive:
+            artifacts: 'build/**'
 
 - job-template:
     name: '{item}_build'
+    # Needs the matrix project plugin
     project-type: matrix
+    scm:
+        - git:
+            basedir: 'repo'
+            remotes:
+                - local:
+                    url: '{local_vcs}'
+                - debian:
+                    url: '{debian_vcs}'
+                - upstream:
+                    url: '{upstream_vcs}'
+            branches:
+                - local/master
+            local-branch: master
+            wipe-workspace: false
+            skip-tag: true
+            prune: true
     axes:
         - axis:
             type: slave
@@ -125,12 +142,13 @@
             threshold: UNSTABLE
         - archive:
             artifacts: 'build/**'
-    # Needs the clone workspace scm plugin
-    scm:
-        - workspace:
-            parent-job: '{item}_prepare'
-            criteria: 'Not Failed'
     builders:
+        # Needs the Copy Artifacts plugin
+        - copyartifact:
+            project: '{item}_prepare'
+            filter: 'build/**'
+            which-build: last-successful
+            stable: false
         - shell:
             !include-raw-escape: build_build.sh
 
@@ -139,12 +157,32 @@
     description: '{description} -- Test'
     block-upstream: false
     node: amd64
+    scm:
+        - git:
+            basedir: 'repo'
+            remotes:
+                - local:
+                    url: '{local_vcs}'
+                - debian:
+                    url: '{debian_vcs}'
+                - upstream:
+                    url: '{upstream_vcs}'
+            branches:
+                - local/master
+            local-branch: master
+            wipe-workspace: false
+            skip-tag: true
+            prune: true
     triggers:
         - reverse:
             jobs: '{obj:dependencies}'
             result: 'unstable'
-    # Needs the clone workspace scm plugin
     builders:
+        - copyartifact:
+            project: '{item}_prepare'
+            filter: 'build/**'
+            which-build: last-successful
+            stable: false
         - shell:
             !include-raw-escape: test_build.sh
     publishers:

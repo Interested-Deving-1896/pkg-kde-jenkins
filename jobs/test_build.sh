@@ -3,19 +3,21 @@
 # them
 set -e
 
+if [ -z "$arch" ]; then
+    # Just a default in case I want to run this without jenkins
+    arch="amd64"
+fi
 export_dir="$(pwd)/build"
 repo_dir="$(pwd)/repo"
-# Provided by jenkins
-arch='{arch}'
 
 echo "Get the information"
 
 cd "$repo_dir"
 version=$(dpkg-parsechangelog -S version)
-epochless_version=${{version##*:}}
+epochless_version=${version##*:}
 source_name=$(dpkg-parsechangelog -S source)
-source_changes="$export_dir/${{source_name}}_${{epochless_version}}_source.changes"
-arch_changes="$export_dir/${{source_name}}_${{epochless_version}}_$arch.changes"
+source_changes="$export_dir/${source_name}_${epochless_version}_source.changes"
+arch_changes="$export_dir/${source_name}_${epochless_version}_$arch.changes"
 # TODO: Detect target distribution or use DEP14
 distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
 if [ "$distribution" = "unreleased" ]; then
@@ -40,11 +42,11 @@ echo "Combine changes file"
 cd "$export_dir"
 mergechanges -f  "$source_changes" "$arch_changes"
 # Fix permissions
-find -maxdepth 1 -type f -exec chmod 0644 '{{}}' '+'
+find -maxdepth 1 -type f -exec chmod 0644 '{}' '+'
 
 echo "Run autopkgtests"
 
-multi_changes="$export_dir/${{source_name}}_${{epochless_version}}_multi.changes"
+multi_changes="$export_dir/${source_name}_${epochless_version}_multi.changes"
 
 adt-run -U "$multi_changes" --output-dir="$export_dir/adt.artifacts" --- lxc -s "adt-$distribution-$arch"
 

@@ -7,8 +7,7 @@
         - armel
     jobs:
         - '{item}_prepare'
-        - '{item}_build_{arch}'
-        - '{item}_publish'
+        - '{item}_build'
         - '{item}_test':
             dependencies: '{obj:test_dependencies}'
             arch: amd64
@@ -26,13 +25,13 @@
         - armel
     jobs:
         - '{item}_prepare'
-        - '{item}_build_{arch}'
-        - '{item}_publish'
+        - '{item}_build'
         - '{item}_test':
             dependencies: '{obj:test_dependencies}'
             arch: amd64
     dependencies: '{obj:build_dependencies}'
     description: '{description}'
+    local_vcs: '{local_vcs}'
     debian_vcs: '{debian_vcs}'
     upstream_vcs: '{upstream_vcs}'
 
@@ -45,8 +44,7 @@
         - armel
     jobs:
         - '{item}_prepare'
-        - '{item}_build_{arch}'
-        - '{item}_publish'
+        - '{item}_build'
         - '{item}_test':
             dependencies: '{obj:test_dependencies}'
             arch: amd64
@@ -69,18 +67,22 @@
     description: '{description} -- Prepare'
     scm:
         - git:
-            url: '{debian_vcs}'
             basedir: 'repo'
             remotes:
+                - local:
+                    url: '{local_vcs}'
                 - debian:
                     url: '{debian_vcs}'
                 - upstream:
                     url: '{upstream_vcs}'
             branches:
+                - master
                 - debian/master
+                - local/master
             local-branch: master
             wipe-workspace: false
             skip-tag: true
+            prune: true
     triggers:
         - pollscm:
             cron: 'H * * * *'
@@ -93,16 +95,7 @@
             !include-raw-escape: prepare_build.sh
     publishers:
         - trigger:
-            project: '{item}_build_amd64'
-            threshold: UNSTABLE
-        - trigger:
-            project: '{item}_build_i386'
-            threshold: UNSTABLE
-        - trigger:
-            project: '{item}_build_armhf'
-            threshold: UNSTABLE
-        - trigger:
-            project: '{item}_build_armel'
+            project: '{item}_build'
             threshold: UNSTABLE
         # Needs the clone workspace scm plugin
         - clone-workspace:
@@ -110,29 +103,28 @@
             workspace-glob: "**"
 
 - job-template:
-    name: '{item}_build_{arch}'
-    description: '{description} -- Build for {arch}'
-    node: '{arch}'
+    name: '{item}_build'
+    project-type: matrix
+    axes:
+        - axis:
+            type: slave
+            name: arch
+            values:
+                - amd64
+                - armel
+                - armhf
+                - i386
+    description: '{description} -- Build'
     triggers:
         - reverse:
             jobs: '{obj:dependencies}'
             result: 'unstable'
     publishers:
-        # Needs the Flexible Publish Plugin
-        - conditional-publisher:
-            - condition-kind: regexp
-              condition-expression: ^amd64$
-              condition-searchtext: '{arch}'
-              action:
-                  - trigger:
-                      project: '{item}_test'
-                      threshold: UNSTABLE
-                  # Needs the clone workspace scm plugin
-                  - clone-workspace:
-                      criteria: "not failed"
-                      workspace-glob: "**"
+        - trigger:
+            project: '{item}_test'
+            threshold: UNSTABLE
         - archive:
-            artifacts: 'build/*.build'
+            artifacts: 'build/**'
     # Needs the clone workspace scm plugin
     scm:
         - workspace:
@@ -140,36 +132,21 @@
             criteria: 'Not Failed'
     builders:
         - shell:
-            !include-raw: build_build.sh
-
-- job-template:
-    name: '{item}_publish'
-    description: '{description} -- Publish'
-    triggers:
-        - reverse:
-            jobs:
-                - '{item}_build_amd64'
-                - '{item}_build_i386'
-                - '{item}_build_armhf'
-                - '{item}_build_armel'
-            result: unstable
+            !include-raw-escape: build_build.sh
 
 - job-template:
     name: '{item}_test'
     description: '{description} -- Test'
     block-upstream: false
+    node: amd64
     triggers:
         - reverse:
             jobs: '{obj:dependencies}'
             result: 'unstable'
     # Needs the clone workspace scm plugin
-    scm:
-        - workspace:
-            parent-job: '{item}_build_{arch}'
-            criteria: 'Not Failed'
     builders:
         - shell:
-            !include-raw: test_build.sh
+            !include-raw-escape: test_build.sh
     publishers:
         - archive:
             artifacts: 'build/**log'

@@ -2,6 +2,10 @@
 # single braces reference to the template vars, use double braces to space
 # them
 set -e
+if [ -z "$arch" ]; then
+    # Just a default in case I want to run this without jenkins
+    arch="amd64"
+fi
 
 export_dir="$(pwd)/build"
 repo_dir="$(pwd)/repo"
@@ -10,14 +14,13 @@ echo "Get the build information"
 cd "$repo_dir"
 source_name=$(dpkg-parsechangelog -S source)
 version=$(dpkg-parsechangelog -S version)
-epochless_version=${{version##*:}}
+epochless_version=${version##*:}
 
 # TODO: Detect target distribution or use DEP14
 distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
 if [ "$distribution" = "unreleased" ]; then
     distribution="unstable"
 fi
-arch='{arch}'
 
 # TODO: Hide this in a config file
 local_repository='deb [trusted=yes] http://freak.gnuservers.com.ar/~maxy/debian/ '"$distribution"' main'
@@ -32,7 +35,7 @@ fi
 
 echo "Build it"
 cd "$export_dir"
-dsc_file="${{source_name}}_${{epochless_version}}.dsc"
+dsc_file="${source_name}_${epochless_version}.dsc"
 chroot="$distribution-$arch-sbuild"
 
 SBUILD_ARGS="--verbose"
@@ -54,8 +57,8 @@ echo "Local upload"
 cd "$export_dir"
 
 # Fix permissions
-find -maxdepth 1 -type f -exec chmod 0644 '{{}}' '+'
-changes_file="${{source_name}}_${{epochless_version}}_${{arch}}.changes"
+find -maxdepth 1 -type f -exec chmod 0644 '{}' '+'
+changes_file="${source_name}_${epochless_version}_${arch}.changes"
 dput -u local "$changes_file"
 
 # Remove build symlink due to a bug in the clone scm plugin

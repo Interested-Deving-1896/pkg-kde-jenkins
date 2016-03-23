@@ -47,7 +47,6 @@ class Tree(object):
             new_subs[new_sub.path] = new_sub
         if len(new_subs) == 1 and not self.values:
             key, sub = new_subs.popitem()
-            sub.path = self.path + sub.path
             return sub
         else:
             self.subtrees = new_subs
@@ -63,14 +62,17 @@ class Tree(object):
             yield value
 
 
-def group_packages(packages):
+def group_packages(packages, basedir):
     ''' Group packages by directories hierarchies '''
 
     tree = Tree()
     groups = {}
 
     for package in packages:
-        dirs = tuple(package.path.lstrip(os.path.sep).split(os.path.sep))
+        path = package.path
+        if path.startswith(basedir):
+            path = path[len(basedir):]
+        dirs = tuple(path.lstrip(os.path.sep).split(os.path.sep))
         tree.add(dirs[:-1], package)
     tree = tree.compress()
     for parent in tree:
@@ -268,8 +270,8 @@ class Package(object):
         return self.path
 
 
-def obtain_packages(dirs):
-    packages = (Package(d) for d in dirs)
+def obtain_packages(dirs, basedir):
+    packages = (Package(os.path.join(basedir, d)) for d in dirs)
     return list(packages)
 
 
@@ -324,7 +326,7 @@ def process_dependencies(packages):
     return relations
 
 
-def prepare_projects(group_tree, dependencies):
+def prepare_projects(group_tree, dependencies, local_repository, local_vcs):
     projects = []
     for group in group_tree:
         print(group)
@@ -334,6 +336,8 @@ def prepare_projects(group_tree, dependencies):
         projects.append({'project': project})
         project['name'] = '-'.join(group.path[-1:])
         project['jobs'] = ['{}-{{item}}'.format(project['name'])]
+        if local_repository:
+            project['local_repository'] = local_repository
         items = []
         project['item'] = items
         for name, package in group.values.items():
@@ -341,9 +345,12 @@ def prepare_projects(group_tree, dependencies):
             items.append({name: item})
             item['description'] = package.short_description
             item['build_dependencies'] = list(
-                '{}_publish'.format(d) for d in dependencies[name]['build'])
+                '{}_build'.format(d) for d in dependencies[name]['build'])
             item['test_dependencies'] = list(
-                '{}_publish'.format(d) for d in dependencies[name]['test'])
+                '{}_build'.format(d) for d in dependencies[name]['test'])
+            if local_vcs:
+                item['local_vcs'] = "{}/{}/{}.git".format(
+                    local_vcs, os.path.join(*group.path), name)
             item['debian_vcs'] = package.vcs.uri
             item['upstream_vcs'] = package.upstream_vcs
     return projects
@@ -360,12 +367,19 @@ def main():
                            nargs='+')
     argparser.add_argument('-o', '--output', type=argparse.FileType('w'),
                            help='Output file', default=sys.stdout)
+    argparser.add_argument('--basedir', default='~')
+    # TODO: first try to give the local repository, unsuccessful
+    # it needs a {distribution} in the middle, :(
+    argparser.add_argument('--local-repository', default='')
+    argparser.add_argument('--local-vcs', default='')
     args = argparser.parse_args()
 
-    packages = obtain_packages(args.package_directory)
+    packages = obtain_packages(args.package_directory, args.basedir)
     packages_relations = process_dependencies(packages)
-    group_tree, groups = group_packages(packages)
-    projects = prepare_projects(group_tree, packages_relations)
+    group_tree, groups = group_packages(packages, args.basedir)
+    projects = prepare_projects(group_tree, packages_relations,
+                                args.local_repository,
+                                args.local_vcs)
     dump_projects(projects, args.output)
 
 

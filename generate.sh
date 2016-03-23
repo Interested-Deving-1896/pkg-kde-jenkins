@@ -24,7 +24,9 @@ if ${delete}; then
         xargs /usr/bin/jenkins-job-builder --conf jjb.ini delete
 fi
 
-python3 jjb-builder.py -o jobs/projects.yaml @framework.paths
+python3 jjb-builder.py -o jobs/projects.yaml \
+    --local-vcs "ssh://freak.gnuservers.com.ar/git" \
+    @framework.paths
 
 ./test.sh
 

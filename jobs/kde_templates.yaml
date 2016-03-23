@@ -78,9 +78,8 @@
                 - upstream:
                     url: '{upstream_vcs}'
             branches:
-                - master
-                - debian/master
-                - local/master
+                - refs/remotes/debian/master
+                - refs/remotes/local/master
             local-branch: master
             wipe-workspace: false
             skip-tag: true

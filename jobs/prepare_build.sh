@@ -101,6 +101,10 @@ gbp buildpackage --git-verbose --git-upstream-tag="$(expand_tag)" \
     --git-export-dir="${export_dir}" --git-dist="${distribution}" \
     --git-overlay -S -us -uc --changes-option="-DDistribution=${distribution}"
 
+# Push
+git push
+
+# Upload source package locally
 version=$(dpkg-parsechangelog -S version)
 epochless_version=${version##*:}
 cd "${export_dir}"

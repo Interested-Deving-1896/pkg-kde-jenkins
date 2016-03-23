@@ -25,8 +25,19 @@ upstream_dir="$(pwd)/upstream"
 echo "Clean build directory"
 rm -rf "${export_dir}"
 
-echo "Add a snapshot changelog entry"
+echo "Merge debian and local"
 cd "${repo_dir}"
+git checkout -B master debian/master
+if ! git show-ref --verify --quiet refs/remotes/local/master; then
+    git push --set-upstream local master
+else
+    git merge refs/remotes/local/master
+fi
+git fetch --all
+git remote set-branches --add local master
+git branch --set-upstream-to=local/master
+
+echo "Add a snapshot changelog entry"
 source_name=$(dpkg-parsechangelog -S source)
 # TODO: Detect native packages
 version=$(dpkg-parsechangelog -S version)

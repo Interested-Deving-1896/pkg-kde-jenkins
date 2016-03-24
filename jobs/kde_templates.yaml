@@ -85,7 +85,8 @@
             skip-tag: true
             prune: true
             # This should be a configuration parameter, somehow
-            excluded-users: 'Automatic packaging <maxy+jenkins@gnuservers.com.ar>'
+            excluded-users:
+                - 'Automatic packaging <maxy+jenkins@gnuservers.com.ar>'
     triggers:
         - pollscm:
             cron: 'H * * * *'

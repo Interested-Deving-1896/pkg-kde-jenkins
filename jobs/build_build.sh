@@ -7,6 +7,34 @@ if [ -z "$arch" ]; then
     arch="amd64"
 fi
 
+packages_for_this_arch () {
+    arch="$1"
+
+    pkg_arches=$(awk '
+/^Architecture:/ {
+    in_arch=1
+    $1=""
+}
+!/^Architecture/ && !/^\s/ {
+    in_arch=0
+}
+in_arch {
+    for (i=1; i <= NF; i++) {
+        if ($i) print $i
+    }
+}' debian/control | sort -u)
+    for pkg_arch in $pkg_arches; do
+        if dpkg-architecture -a"$arch" -i"$pkg_arch"; then
+            return 0
+        fi
+        # We assume we want to build the arch all in amd64
+        if [ "$pkg_arch" = "all" ] && [ "$arch" = "amd64" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
 export_dir="$(pwd)/build"
 repo_dir="$(pwd)/repo"
 
@@ -24,6 +52,13 @@ fi
 
 # TODO: Hide this in a config file
 local_repository='deb [trusted=yes] http://freak.gnuservers.com.ar/~maxy/debian/ '"$distribution"' main'
+
+echo "Check it this package is available in the current arch"
+
+if ! packages_for_this_arch "$arch"; then
+    # Skip this build
+    exit 0
+fi
 
 echo "Call pre-build hooks"
 cd "$repo_dir"

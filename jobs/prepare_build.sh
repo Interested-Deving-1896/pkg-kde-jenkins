@@ -51,7 +51,9 @@ if [ "$distribution" = "unreleased" ]; then
     distribution="unstable"
 fi
 
-gbp buildpackage --git-verbose --git-tag-only
+if gbp buildpackage --git-verbose --git-tag-only; then
+    echo "Added missing tag"
+fi
 
 DCH="gbp dch"
 DCH_ARGS="--verbose --snapshot --upstream-tag='$(expand_tag)' --commit"

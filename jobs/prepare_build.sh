@@ -51,6 +51,7 @@ if [ "$distribution" = "unreleased" ]; then
     distribution="unstable"
 fi
 
+gbp buildpackage --git-verbose --git-tag-only
 
 DCH="gbp dch"
 DCH_ARGS="--verbose --snapshot --upstream-tag='$(expand_tag)' --commit"
@@ -98,11 +99,11 @@ cd "${repo_dir}"
 # FIXME: Force changes distribution to unstable, probably a job parameter
 distribution="unstable"
 gbp buildpackage --git-verbose --git-upstream-tag="$(expand_tag)" \
-    --git-export-dir="${export_dir}" --git-dist="${distribution}" \
+    --git-export-dir="${export_dir}" --git-tag --git-dist="${distribution}" \
     --git-overlay -S -us -uc --changes-option="-DDistribution=${distribution}"
 
 # Push
-git push
+git push --follow-tags
 
 # Upload source package locally
 version=$(dpkg-parsechangelog -S version)

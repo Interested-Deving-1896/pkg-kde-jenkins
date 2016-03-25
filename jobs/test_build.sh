@@ -3,6 +3,12 @@
 # them
 set -e
 
+run_adt () {
+    multi_changes="$export_dir/${source_name}_${epochless_version}_multi.changes"
+    adt-run -U "$multi_changes" --output-dir="$export_dir/adt.artifacts" --- lxc -s "adt-$distribution-$arch"
+    adt2junit.py -o "$export_dir/adt.xml" "$export_dir/adt.artifacts/log"
+}
+
 if [ -z "$arch" ]; then
     # Just a default in case I want to run this without jenkins
     arch="amd64"
@@ -40,17 +46,18 @@ echo "Run Lintian"
 echo "Combine changes file"
 
 cd "$export_dir"
+
 mergechanges -f  "$source_changes" "$arch_changes"
 # Fix permissions
 find -maxdepth 1 -type f -exec chmod 0644 '{}' '+'
 
 echo "Run autopkgtests"
+cd "$repo_dir"
+if [ -f debian/tests/control ]; then
+    run_adt
+fi
 
-multi_changes="$export_dir/${source_name}_${epochless_version}_multi.changes"
-
-adt-run -U "$multi_changes" --output-dir="$export_dir/adt.artifacts" --- lxc -s "adt-$distribution-$arch"
-
-adt2junit.py -o "$export_dir/adt.xml" "$export_dir/adt.artifacts/log"
+cd "$export_dir"
 
 echo "Call post-test hooks"
 

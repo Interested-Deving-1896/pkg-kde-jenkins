@@ -181,7 +181,7 @@
             result: 'unstable'
     builders:
         - copyartifact:
-            project: '{item}_prepare'
+            project: '{item}_build'
             filter: 'build/**'
             which-build: last-successful
             stable: false

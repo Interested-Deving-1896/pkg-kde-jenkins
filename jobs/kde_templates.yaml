@@ -96,6 +96,8 @@
             cron: 'H H/6 * * *'
     builders:
         - shell:
+            !include-raw-escape: clean_build.sh
+        - shell:
             !include-raw-escape: prepare_build.sh
     publishers:
         - trigger:
@@ -145,6 +147,8 @@
         - archive:
             artifacts: 'build/**'
     builders:
+        - shell:
+            !include-raw-escape: clean_build.sh
         # Needs the Copy Artifacts plugin
         - copyartifact:
             project: '{item}_prepare'
@@ -180,8 +184,10 @@
             jobs: '{obj:dependencies}'
             result: 'unstable'
     builders:
+        - shell:
+            !include-raw-escape: clean_build.sh
         - copyartifact:
-            project: '{item}_build'
+            project: '{item}_build/arch=amd64'
             filter: 'build/**'
             which-build: last-successful
             stable: false

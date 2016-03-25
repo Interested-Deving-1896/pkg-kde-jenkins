@@ -22,9 +22,6 @@ export_dir="$(pwd)/build"
 repo_dir="$(pwd)/repo"
 upstream_dir="$(pwd)/upstream"
 
-echo "Clean build directory"
-rm -rf "${export_dir}"
-
 echo "Merge debian and local"
 cd "${repo_dir}"
 git checkout -B master debian/master

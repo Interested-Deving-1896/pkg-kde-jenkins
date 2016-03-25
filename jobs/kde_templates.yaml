@@ -86,7 +86,7 @@
             prune: true
             # This should be a configuration parameter, somehow
             excluded-users:
-                - 'Automatic packaging <maxy+jenkins@gnuservers.com.ar>'
+                - 'Automatic packaging'
     triggers:
         - pollscm:
             cron: 'H * * * *'

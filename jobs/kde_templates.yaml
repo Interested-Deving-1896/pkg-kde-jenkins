@@ -91,14 +91,11 @@
         - pollscm:
             cron: 'H * * * *'
         - script:
-            script:
-                !include-raw-escape: prepare_trigger.sh
+            script: '/srv/pkg-kde-jenkins/scripts/prepare_trigger.sh'
             cron: 'H H/6 * * *'
     builders:
-        - shell:
-            !include-raw-escape: clean_build.sh
-        - shell:
-            !include-raw-escape: prepare_build.sh
+        - shell: '/srv/pkg-kde-jenkins/scripts/clean_build.sh'
+        - shell: '/srv/pkg-kde-jenkins/scripts/prepare_build.sh'
     publishers:
         - trigger:
             project: '{item}_build'
@@ -147,16 +144,14 @@
         - archive:
             artifacts: 'build/**'
     builders:
-        - shell:
-            !include-raw-escape: clean_build.sh
+        - shell: '/srv/pkg-kde-jenkins/scripts/clean_build.sh'
         # Needs the Copy Artifacts plugin
         - copyartifact:
             project: '{item}_prepare'
             filter: 'build/**'
             which-build: last-successful
             stable: false
-        - shell:
-            !include-raw-escape: build_build.sh
+        - shell: '/srv/pkg-kde-jenkins/scripts/build_build.sh'
 
 - job-template:
     name: '{item}_test'
@@ -184,15 +179,13 @@
             jobs: '{obj:dependencies}'
             result: 'unstable'
     builders:
-        - shell:
-            !include-raw-escape: clean_build.sh
+        - shell: '/srv/pkg-kde-jenkins/scripts/clean_build.sh'
         - copyartifact:
             project: '{item}_build/arch=amd64'
             filter: 'build/**'
             which-build: last-successful
             stable: false
-        - shell:
-            !include-raw-escape: test_build.sh
+        - shell: '/srv/pkg-kde-jenkins/scripts/test_build.sh'
     publishers:
         - archive:
             artifacts: 'build/**log'

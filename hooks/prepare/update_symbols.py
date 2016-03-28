@@ -17,6 +17,7 @@ def process_options():
         description='Update symbols files with the logs from the buildds.')
     arg_parser.add_argument('-d', '--package-dir', default='repo')
     arg_parser.add_argument('--debug', default=False)
+    arg_parser.add_argument('--no-act', action='store_true')
     args = arg_parser.parse_args()
 
     if args.debug:
@@ -40,8 +41,8 @@ def main():
 
     print(os.environ)
 
-    if not options.no_act:
-        pass
+    if options.no_act:
+        sys.exit(0)
 
 
 if __name__ == '__main__':

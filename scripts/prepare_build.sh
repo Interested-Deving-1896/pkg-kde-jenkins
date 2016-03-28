@@ -90,7 +90,7 @@ echo "Call prepare hooks"
 
 hooks_dir='/srv/pkg-kde-jenkins/hooks/prepare'
 if [ -d "${hooks_dir}" ]; then
-    run-parts --exit-on-error "${hooks_dir}"
+    run-parts --exit-on-error --verbose "${hooks_dir}"
 fi
 
 echo "Prepare source package"

@@ -65,7 +65,7 @@ cd "$repo_dir"
 
 hooks_dir='/srv/pkg-kde-jenkins/hooks/pre-build'
 if [ -d "$hooks_dir" ]; then
-    run-parts --exit-on-error "$hooks_dir"
+    run-parts --exit-on-error --verbose "$hooks_dir"
 fi
 
 echo "Build it"
@@ -85,7 +85,7 @@ cd "$repo_dir"
 
 hooks_dir='/srv/pkg-kde-jenkins/hooks/post-build'
 if [ -d "$hooks_dir" ]; then
-    run-parts --exit-on-error "$hooks_dir"
+    run-parts --exit-on-error --verbose "$hooks_dir"
 fi
 
 echo "Local upload"

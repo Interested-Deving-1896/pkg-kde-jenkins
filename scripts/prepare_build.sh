@@ -47,7 +47,9 @@ upstream_version=${epochless_version%%-*}
 # TODO: What about dfsg tags?
 upstream_tag=$(expand_tag "${upstream_version}")
 # TODO: Detect target distribution or use DEP14
-distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
+last_distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
+export last_distribution
+distribution=$last_distribution
 if [ "$distribution" = "unreleased" ]; then
     distribution="unstable"
 fi

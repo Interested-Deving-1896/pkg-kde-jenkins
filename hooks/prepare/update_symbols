@@ -17,6 +17,9 @@ def process_options():
         description='Update symbols files with the logs from the buildds.')
     arg_parser.add_argument('-d', '--package-dir', default='repo')
     arg_parser.add_argument('--debug', default=False)
+    arg_parser.add_argument('--distribution',
+                            default=os.environ.get('last_distribution',
+                                                   'unreleased'))
     arg_parser.add_argument('--no-act', action='store_true')
     args = arg_parser.parse_args()
 
@@ -32,6 +35,14 @@ def symbols_files(basedir):
     return glob.glob(os.path.join(basedir, 'debian/*.symbols'))
 
 
+def use_local_logs():
+    print('Local')
+
+
+def use_buildds_logs(distribution):
+    print('Buildds')
+
+
 def main():
     options = process_options()
 
@@ -40,6 +51,10 @@ def main():
         sys.exit(0)
 
     print(os.environ)
+    if options.distribution.lower() == 'unreleased':
+        use_local_logs()
+    else:
+        use_buildds_logs(options.distribution.lower())
 
     if options.no_act:
         sys.exit(0)

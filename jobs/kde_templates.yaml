@@ -64,9 +64,8 @@
     logrotate:
         daysToKeep: 7
 
-- job-template:
-    name: '{item}_prepare'
-    description: '{description} -- Prepare'
+- scm:
+    name: debian_scm
     scm:
         - git:
             basedir: 'repo'
@@ -77,9 +76,7 @@
                     url: '{debian_vcs}'
                 - upstream:
                     url: '{upstream_vcs}'
-            branches:
-                - debian/master
-                - local/master
+            branches: '{obj:branches}'
             local-branch: master
             wipe-workspace: false
             skip-tag: true
@@ -87,6 +84,18 @@
             # This should be a configuration parameter, somehow
             excluded-users:
                 - 'Automatic packaging'
+
+- job-template:
+    name: '{item}_prepare'
+    description: '{description} -- Prepare'
+    scm:
+        - debian_scm:
+            local_vcs: '{local_vcs}'
+            debian_vcs: '{debian_vcs}'
+            upstream_vcs: '{upstream_vcs}'
+            branches:
+                - debian/master
+                - local/master
     triggers:
         - pollscm:
             cron: 'H * * * *'
@@ -110,21 +119,12 @@
     description: '{description} -- Build'
     block-upstream: true
     scm:
-        - git:
-            basedir: 'repo'
-            remotes:
-                - local:
-                    url: '{local_vcs}'
-                - debian:
-                    url: '{debian_vcs}'
-                - upstream:
-                    url: '{upstream_vcs}'
+        - debian_scm:
+            local_vcs: '{local_vcs}'
+            debian_vcs: '{debian_vcs}'
+            upstream_vcs: '{upstream_vcs}'
             branches:
                 - local/master
-            local-branch: master
-            wipe-workspace: false
-            skip-tag: true
-            prune: true
     axes:
         - axis:
             type: slave
@@ -159,21 +159,12 @@
     description: '{description} -- Test'
     node: lxc_amd64
     scm:
-        - git:
-            basedir: 'repo'
-            remotes:
-                - local:
-                    url: '{local_vcs}'
-                - debian:
-                    url: '{debian_vcs}'
-                - upstream:
-                    url: '{upstream_vcs}'
+        - debian_scm:
+            local_vcs: '{local_vcs}'
+            debian_vcs: '{debian_vcs}'
+            upstream_vcs: '{upstream_vcs}'
             branches:
                 - local/master
-            local-branch: master
-            wipe-workspace: false
-            skip-tag: true
-            prune: true
     triggers:
         - reverse:
             jobs: '{obj:dependencies}'

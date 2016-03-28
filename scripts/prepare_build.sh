@@ -21,6 +21,10 @@ tag_to_version () {
 export_dir="$(pwd)/build"
 repo_dir="$(pwd)/repo"
 upstream_dir="$(pwd)/upstream"
+if [ -z "$WORKSPACE" ]; then
+    # Just in case we want to run this without jenkins
+    WORKSPACE=$(pwd)
+fi
 
 echo "Merge debian and local"
 cd "${repo_dir}"
@@ -88,6 +92,7 @@ git worktree add "${upstream_dir}" "${upstream_tag}"
 
 echo "Call prepare hooks"
 
+cd "$WORKSPACE"
 hooks_dir='/srv/pkg-kde-jenkins/hooks/prepare'
 if [ -d "${hooks_dir}" ]; then
     run-parts --exit-on-error --verbose "${hooks_dir}"

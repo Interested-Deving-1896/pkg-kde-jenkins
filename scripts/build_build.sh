@@ -6,6 +6,10 @@ if [ -z "$arch" ]; then
     # Just a default in case I want to run this without jenkins
     arch="amd64"
 fi
+if [ -z "$WORKSPACE" ]; then
+    # Just in case we want to run this without jenkins
+    WORKSPACE=$(pwd)
+fi
 
 packages_for_this_arch () {
     arch="$1"
@@ -61,8 +65,8 @@ if ! packages_for_this_arch "$arch"; then
 fi
 
 echo "Call pre-build hooks"
-cd "$repo_dir"
 
+cd "$WORKSPACE"
 hooks_dir='/srv/pkg-kde-jenkins/hooks/pre-build'
 if [ -d "$hooks_dir" ]; then
     run-parts --exit-on-error --verbose "$hooks_dir"
@@ -81,8 +85,8 @@ sbuild --dist="$distribution" --arch="$arch" --chroot="$chroot" $SBUILD_ARGS \
     --extra-repository="$local_repository" "$dsc_file"
 
 echo "Call post-build hooks"
-cd "$repo_dir"
 
+cd "$WORKSPACE"
 hooks_dir='/srv/pkg-kde-jenkins/hooks/post-build'
 if [ -d "$hooks_dir" ]; then
     run-parts --exit-on-error --verbose "$hooks_dir"

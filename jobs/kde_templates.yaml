@@ -59,7 +59,7 @@
     name: global
     quiet-period: 5
     block-downstream: false
-    block-upstream: true
+    block-upstream: false
     retry-count: 3
     logrotate:
         daysToKeep: 7
@@ -107,6 +107,8 @@
     name: '{item}_build'
     # Needs the matrix project plugin
     project-type: matrix
+    description: '{description} -- Build'
+    block-upstream: true
     scm:
         - git:
             basedir: 'repo'
@@ -132,7 +134,6 @@
                 - armel
                 - armhf
                 - i386
-    description: '{description} -- Build'
     triggers:
         - reverse:
             jobs: '{obj:dependencies}'
@@ -156,8 +157,7 @@
 - job-template:
     name: '{item}_test'
     description: '{description} -- Test'
-    block-upstream: false
-    node: amd64
+    node: lxc_amd64
     scm:
         - git:
             basedir: 'repo'

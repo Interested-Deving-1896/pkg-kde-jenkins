@@ -4,6 +4,7 @@ import argparse
 import glob
 import logging
 import os
+import subprocess
 import sys
 
 
@@ -18,8 +19,8 @@ def process_options():
     arg_parser.add_argument('-d', '--package-dir', default='repo')
     arg_parser.add_argument('--debug', default=False)
     arg_parser.add_argument('--distribution',
-                            default=os.environ.get('last_distribution',
-                                                   'unreleased'))
+                            default=os.environ.get('DISTRIBUTION',
+                                                   ''))
     arg_parser.add_argument('--no-act', action='store_true')
     args = arg_parser.parse_args()
 
@@ -31,6 +32,28 @@ def process_options():
     return args
 
 
+def get_distribution(options):
+    distribution = options.distribution.lower()
+    if distribution:
+        return distribution
+    cmd = ['dpkg-parsechangelog', '-S', 'distribution']
+    distribution = subprocess.check_output(
+        cmd, cwd=options.package_dir, universal_newlines=True).strip().lower()
+    return distribution
+
+
+def get_source_name(options):
+    cmd = ['dpkg-parsechangelog', '-S', 'source']
+    return subprocess.check_output(
+        cmd, cwd=options.package_dir, universal_newlines=True).strip().lower()
+
+
+def get_version(options):
+    cmd = ['dpkg-parsechangelog', '-S', 'version']
+    return subprocess.check_output(
+        cmd, cwd=options.package_dir, universal_newlines=True).strip().lower()
+
+
 def symbols_files(basedir):
     return glob.glob(os.path.join(basedir, 'debian/*.symbols'))
 
@@ -39,8 +62,13 @@ def use_local_logs():
     print('Local')
 
 
-def use_buildds_logs(distribution):
+def use_buildds_logs(options, distribution):
     print('Buildds')
+    source_name = get_source_name(options)
+    version = get_version(options)
+    # TODO: Use a tmpdir
+    # cmd = ['getbuildlog', source_name, version]
+    # subprocess(cmd
 
 
 def main():
@@ -51,10 +79,11 @@ def main():
         sys.exit(0)
 
     print(os.environ)
-    if options.distribution.lower() == 'unreleased':
+    distribution = get_distribution(options)
+    if distribution == 'unreleased':
         use_local_logs()
     else:
-        use_buildds_logs(options.distribution.lower())
+        use_buildds_logs(options, distribution)
 
     if options.no_act:
         sys.exit(0)

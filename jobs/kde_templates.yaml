@@ -42,6 +42,7 @@
         - armhf
         - armel
     jobs:
+        - '{item}_multijob'
         - '{item}_prepare'
         - '{item}_build'
         - '{item}_test':
@@ -61,6 +62,7 @@
         - armhf
         - armel
     jobs:
+        - '{item}_multijob'
         - '{item}_prepare'
         - '{item}_build'
         - '{item}_test':

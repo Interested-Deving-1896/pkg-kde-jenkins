@@ -22,6 +22,7 @@ def process_options():
                             default=os.environ.get('DISTRIBUTION',
                                                    ''))
     arg_parser.add_argument('--no-act', action='store_true')
+    arg_parser.add_argument('--aux-dir', default='build/update_symbols')
     args = arg_parser.parse_args()
 
     if args.debug:
@@ -32,61 +33,111 @@ def process_options():
     return args
 
 
-def get_distribution(options):
-    distribution = options.distribution.lower()
+def get_distribution(package_dir, distribution):
+    distribution = distribution.lower()
     if distribution:
         return distribution
     cmd = ['dpkg-parsechangelog', '-S', 'distribution']
     distribution = subprocess.check_output(
-        cmd, cwd=options.package_dir, universal_newlines=True).strip().lower()
+        cmd, cwd=package_dir, universal_newlines=True).strip().lower()
     return distribution
 
 
-def get_source_name(options):
+def ensure_path(path):
+    ''' Create path if it doesn't exists '''
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
+
+
+def get_source_name(package_dir):
     cmd = ['dpkg-parsechangelog', '-S', 'source']
     return subprocess.check_output(
-        cmd, cwd=options.package_dir, universal_newlines=True).strip().lower()
+        cmd, cwd=package_dir, universal_newlines=True).strip().lower()
 
 
-def get_version(options):
+def get_version(package_dir):
     cmd = ['dpkg-parsechangelog', '-S', 'version']
     return subprocess.check_output(
-        cmd, cwd=options.package_dir, universal_newlines=True).strip().lower()
+        cmd, cwd=package_dir, universal_newlines=True).strip().lower()
 
 
 def symbols_files(basedir):
     return glob.glob(os.path.join(basedir, 'debian/*.symbols'))
 
 
+def git_changes(workdir):
+    ''' Check if there are uncommitted changes pending '''
+    status = subprocess.check_output(
+        ['git', 'status', '--porcelain'], cwd=workdir,
+        universal_newlines=True)
+    return status.strip()
+
+
+def git_commit(workdir, msg):
+    ''' Commit pending changes '''
+    cmd = ['git', 'commit', '-a' '-m', msg]
+    subprocess.call(cmd, cwd=workdir)
+
+
+def call_symbols_helper(package_dir, version, files):
+    upstream_version, debian_part = version.split('-', 2)
+
+    cmd = ['pkgkde-symbolshelper', 'batchpatch', '-v', upstream_version]
+    cmd.extend(files)
+    try:
+        subprocess.check_call(cmd, cwd=package_dir)
+    except subprocess.CalledProcessError:
+        return None
+
+
 def use_local_logs():
     print('Local')
 
 
-def use_buildds_logs(options, distribution):
+def use_buildds_logs(package_dir, version, distribution, aux_dir):
     print('Buildds')
-    source_name = get_source_name(options)
-    version = get_version(options)
-    # TODO: Use a tmpdir
-    # cmd = ['getbuildlog', source_name, version]
-    # subprocess(cmd
+    source_name = get_source_name(package_dir)
+    cmd = ['getbuildlog', source_name, version]
+    subprocess.check_call(cmd, cwd=aux_dir)
+    filename_glob = '{}_{}_*.log*'.format(source_name, version)
+    downloaded_glob = os.path.join(os.getcwd(), aux_dir,
+                                   filename_glob)
+    downloaded_files = glob.glob(downloaded_glob)
+    if not downloaded_files:
+        return None
+    return downloaded_files
 
 
 def main():
     options = process_options()
 
-    if not symbols_files(options.package_dir):
+    package_dir = options.package_dir
+    if not symbols_files(package_dir):
         logging.info('No symbols files, ignoring.')
         sys.exit(0)
 
     print(os.environ)
-    distribution = get_distribution(options)
+    aux_dir = ensure_path(options.aux_dir)
+    distribution = get_distribution(package_dir, options.distribution)
+    version = get_version(package_dir)
     if distribution == 'unreleased':
-        use_local_logs()
+        msg = 'Update symbols files.'
+        logfiles = use_local_logs()
     else:
-        use_buildds_logs(options, distribution)
+        msg = 'Update symbols files from buildds logs ({version}).'
+        logfiles = use_buildds_logs(package_dir, version, distribution, aux_dir)
 
     if options.no_act:
         sys.exit(0)
+
+    if not logfiles:
+        # Nothing to do
+        sys.exit(0)
+
+    call_symbols_helper(package_dir, version, logfiles)
+    if git_changes(package_dir):
+        git_commit(package_dir, msg.format(version=get_version(package_dir)))
 
 
 if __name__ == '__main__':

@@ -1,6 +1,7 @@
 #!/bin/sh
 
 set -e
+set -x
 
 if [ ! -d "${WORKSPACE}/repo" ]; then
     # not scm polled, skip
@@ -25,7 +26,7 @@ expand_tag () {
 
 # Detect native packages
 if grep -q 'native' debian/source/format; then
-    exit 1
+    exit 4
 fi
 
 version=$(dpkg-parsechangelog -S version)

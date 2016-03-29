@@ -1,5 +1,5 @@
 #!/bin/sh
-# prepare_trigger script
+# multijob_trigger script
 # Copyright © 2016 Maximiliano Curia <maxy@gnuservers.com.ar>
 
 # This program is free software; you can redistribute it and/or modify

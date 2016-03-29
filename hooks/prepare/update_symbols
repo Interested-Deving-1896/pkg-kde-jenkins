@@ -120,7 +120,7 @@ def use_local_logs(options):
             '//a[re:test(.,"^{base_job}_.*_{arch}\\.build$", "i")]'
             '/@href'.format(base_job=base_job, arch=arch),
             namespaces={'re': regexpNS})
-        print(result.text)
+        print(result[0].text)
 
         return
 

@@ -158,7 +158,7 @@ def use_buildds_logs(package_dir, version, distribution, aux_dir):
 def has_missing_symbols(package_dir):
     missing_re = re.compile(r'^\s*#(DEPRECATED|MISSING)')
     for filename in symbols_files(package_dir):
-        with open(filename, 't') as f:
+        with open(filename, 'rt') as f:
             for line in f:
                 if missing_re.match(line):
                     return True

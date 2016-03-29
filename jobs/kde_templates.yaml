@@ -157,15 +157,14 @@
     publishers:
         # Needs the Flexible Publish Plugin
         - conditional-publisher:
-            - condition-kind: regexp
-              condition-expression: ^amd64$
-              condition-searchtext: $arch
-              action:
-                  - trigger:
-                      project: '{item}_test'
-                      threshold: UNSTABLE
+            - condition-kind: shell
+                conditional-command: /srv/pkg-kde-jenkins/scripts/build_conditional-publisher.sh
+                action:
+                    - trigger:
+                        project: '{item}_test'
+                        threshold: UNSTABLE
         - archive:
-            artifacts: 'build/**'
+            artifacts: 'build/'
     builders:
         - shell: '/srv/pkg-kde-jenkins/scripts/clean_build.sh'
         # Needs the Copy Artifacts plugin

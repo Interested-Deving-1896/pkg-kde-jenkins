@@ -117,9 +117,10 @@ def use_local_logs(options):
         regexpNS = 'http://exslt.org/regular-expressions'
         result = tree.xpath(
             '//table[@class="fileList"]'
-            '//a[re:test(.,"^{base_job}.*\\.build$", "i")]',
+            '//a[re:test(.,"^{base_job}_.*_{arch}\\.build$", "i")]'
+            '/@href'.format(base_job=base_job, arch=arch),
             namespaces={'re': regexpNS})
-        print(result)
+        print(result.text)
 
         return
 

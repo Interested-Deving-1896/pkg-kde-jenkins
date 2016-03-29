@@ -100,7 +100,7 @@
         - pollscm:
             cron: 'H * * * *'
         - script:
-            script-file-path: '/srv/pkg-kde-jenkins/scripts/prepare_trigger.sh'
+            script: '/srv/pkg-kde-jenkins/scripts/prepare_trigger.sh'
             cron: 'H H/6 * * *'
     builders:
         - shell: '/srv/pkg-kde-jenkins/scripts/clean_build.sh'

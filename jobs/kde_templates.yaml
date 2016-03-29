@@ -137,10 +137,11 @@
             name: Build amd64
             condition: UNSTABLE
             projects:
-                - name: '{item}_build/arch=amd64'
+                - name: '{item}_build'
                   current-parameters: true
                   abort-all-job: true
                   kill-phase-on: FAILURE
+                  restrict-matrix-project: 'arch == "amd64"'
         - multijob:
             name: Build others and Test
             condition: UNSTABLE

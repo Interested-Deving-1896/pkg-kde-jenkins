@@ -157,8 +157,9 @@
     publishers:
         # Needs the Flexible Publish Plugin
         - conditional-publisher:
-            - condition-kind: shell
-                conditional-command: /srv/pkg-kde-jenkins/scripts/build_conditional-publisher.sh
+            - condition-kind: regexp
+                condition-expression: ^amd64$
+                condition-searchtext: $arch
                 action:
                     - trigger:
                         project: '{item}_test'

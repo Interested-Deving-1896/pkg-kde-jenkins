@@ -162,12 +162,12 @@
         # Needs the Flexible Publish Plugin
         - conditional-publisher:
             - condition-kind: regexp
-                condition-expression: ^amd64$
-                condition-searchtext: $arch
-                action:
-                    - trigger:
-                        project: '{item}_test'
-                        threshold: UNSTABLE
+              condition-expression: ^amd64$
+              condition-searchtext: $arch
+              action:
+                  - trigger:
+                      project: '{item}_test'
+                      threshold: UNSTABLE
         - archive:
             artifacts: 'build/'
     builders:

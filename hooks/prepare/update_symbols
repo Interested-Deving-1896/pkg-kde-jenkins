@@ -102,7 +102,7 @@ def git_changes(workdir):
 
 def git_commit(workdir, msg):
     ''' Commit pending changes '''
-    cmd = ['git', 'commit', '-a' '-m', msg]
+    cmd = ['git', 'commit', '-a', '-m', msg]
     subprocess.call(cmd, cwd=workdir)
 
 

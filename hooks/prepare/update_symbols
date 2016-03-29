@@ -17,7 +17,7 @@ def process_options():
     arg_parser = argparse.ArgumentParser(
         description='Update symbols files with the logs from the buildds.')
     arg_parser.add_argument('-d', '--package-dir', default='repo')
-    arg_parser.add_argument('--debug', default=False)
+    arg_parser.add_argument('--debug', action='store_true')
     arg_parser.add_argument('--distribution',
                             default=os.environ.get('DISTRIBUTION',
                                                    ''))

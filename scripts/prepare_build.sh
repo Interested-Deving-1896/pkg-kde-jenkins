@@ -97,7 +97,7 @@ if [ -d "${hooks_dir}" ]; then
 fi
 
 echo "Add a new changelog entry"
-
+cd "${repo_dir}"
 ${DCH} ${DCH_ARGS}
 
 echo "Prepare source package"

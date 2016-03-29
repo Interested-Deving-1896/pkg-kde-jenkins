@@ -47,19 +47,10 @@ upstream_version=${epochless_version%%-*}
 # TODO: What about dfsg tags?
 upstream_tag=$(expand_tag "${upstream_version}")
 # TODO: Detect target distribution or use DEP14
-last_distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
-export last_distribution
-distribution=$last_distribution
+distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
 if [ "$distribution" = "unreleased" ]; then
     distribution="unstable"
 fi
-
-if gbp buildpackage --git-verbose --git-tag-only; then
-    echo "Added missing tag"
-fi
-
-DCH="gbp dch"
-DCH_ARGS="--verbose --snapshot --upstream-tag='$(expand_tag)' --commit"
 
 # ignore the "unstable" (*.*.80 + as well as the rc, alpha and beta tags) releases
 release_tag=$(git tag --sort='version:refname' -l "$(expand_tag '*')" | \
@@ -69,6 +60,9 @@ release_tag=$(git tag --sort='version:refname' -l "$(expand_tag '*')" | \
     /^'"${upstream_tag}"'$/d
     p
 }' | tail -1)
+
+DCH="gbp dch"
+DCH_ARGS="--verbose --snapshot --upstream-tag='$(expand_tag)' --commit"
 
 if [ -n "${release_tag}" ]; then
     if ! git diff --quiet "${upstream_tag}" "${release_tag}"; then
@@ -82,7 +76,9 @@ if [ -n "${release_tag}" ]; then
     fi
 fi
 
-${DCH} ${DCH_ARGS}
+if gbp buildpackage --git-verbose --git-tag-only; then
+    echo "Added missing tag"
+fi
 
 echo "Prepare upstream worktree"
 
@@ -99,6 +95,10 @@ hooks_dir='/srv/pkg-kde-jenkins/hooks/prepare'
 if [ -d "${hooks_dir}" ]; then
     run-parts --exit-on-error --verbose "${hooks_dir}"
 fi
+
+echo "Add a new changelog entry"
+
+${DCH} ${DCH_ARGS}
 
 echo "Prepare source package"
 cd "${repo_dir}"

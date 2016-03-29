@@ -171,7 +171,7 @@
         # Needs the Copy Artifacts plugin
         - copyartifact:
             project: '{item}_prepare'
-            filter: 'build/**'
+            filter: 'build/'
             which-build: last-successful
             stable: false
         - shell: '/srv/pkg-kde-jenkins/scripts/build_build.sh'
@@ -201,6 +201,6 @@
         - shell: '/srv/pkg-kde-jenkins/scripts/test_build.sh'
     publishers:
         - archive:
-            artifacts: 'build/**log'
+            artifacts: 'build/'
         - junit:
             results: 'build/*.xml'

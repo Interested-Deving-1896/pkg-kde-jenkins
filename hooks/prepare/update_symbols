@@ -4,6 +4,7 @@ import argparse
 import glob
 import logging
 import os
+import re
 import subprocess
 import sys
 
@@ -136,7 +137,7 @@ def use_local_logs(options):
             dir=options.aux_dir, base_job=base_job, arch=arch)
         print(filename)
         save_file(response, filename)
-        files.add(filename)
+        files.append(filename)
     return files
 
 

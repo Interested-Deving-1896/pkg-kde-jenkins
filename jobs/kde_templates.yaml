@@ -126,7 +126,7 @@
             project: '{item}_build'
             threshold: UNSTABLE
         - archive:
-            artifacts: 'build/**'
+            artifacts: 'build/'
 
 - job-template:
     name: '{item}_build'
@@ -195,7 +195,7 @@
         - shell: '/srv/pkg-kde-jenkins/scripts/clean_build.sh'
         - copyartifact:
             project: '{item}_build/arch=amd64'
-            filter: 'build/**'
+            filter: 'build/'
             which-build: last-successful
             stable: false
         - shell: '/srv/pkg-kde-jenkins/scripts/test_build.sh'

@@ -129,7 +129,7 @@ def use_local_logs(options):
         if not result:
             continue
 
-        buildlog_url = index_url . result[0]
+        buildlog_url = index_url + result[0]
         response = requests.get(buildlog_url)
         filename = '{dir}/{base_job}_{arch}.build'.format(
             dir=options.aux_dir, base_job=base_job, arch=arch)

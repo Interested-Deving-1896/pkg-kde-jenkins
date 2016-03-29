@@ -108,7 +108,7 @@ def use_local_logs(options):
     base_job, _ = job_name.rsplit('_', 2)
     for arch in arches:
         r = requests.get(
-            '{base_url}job/{base_job}_build/arch={arch}/lastBuild/'
+            '{base_url}/job/{base_job}_build/arch={arch}/lastBuild/'
             'artifact/build/'.format(base_url=base_url, base_job=base_job,
                                      arch=arch))
         print(r.text)

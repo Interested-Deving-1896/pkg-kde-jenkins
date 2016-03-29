@@ -8,6 +8,7 @@ import subprocess
 import sys
 
 import requests
+from lxml import html
 
 
 def process_options():
@@ -107,11 +108,19 @@ def use_local_logs(options):
     job_name = options.job_name
     base_job, _ = job_name.rsplit('_', 2)
     for arch in arches:
-        r = requests.get(
-            '{base_url}/job/{base_job}_build/arch={arch}/lastBuild/'
-            'artifact/build/'.format(base_url=base_url, base_job=base_job,
-                                     arch=arch))
-        print(r.text)
+        index_url = ('{base_url}/job/{base_job}_build/arch={arch}/lastBuild/'
+                     'artifact/build/'.format(
+                         base_url=base_url, base_job=base_job, arch=arch))
+
+        page = requests.get(index_url)
+        tree = html.fromstring(page.content)
+        regexpNS = 'http://exslt.org/regular-expressions'
+        result = tree.xpath(
+            '//table[@class="fileList"]'
+            '//a[re:test(.,"^{base_job}.*\\.build$", "i")]',
+            namespaces={'re': regexpNS})
+        print(result)
+
         return
 
 

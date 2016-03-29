@@ -109,6 +109,7 @@ def save_file(response, filename):
 def use_local_logs(options):
     print('Local')
 
+    files = []
     arches = ['amd64', 'i386', 'armel', 'armhf']
     base_url = options.jenkins_url
     job_name = options.job_name
@@ -135,6 +136,8 @@ def use_local_logs(options):
             dir=options.aux_dir, base_job=base_job, arch=arch)
         print(filename)
         save_file(response, filename)
+        files.add(filename)
+    return files
 
 
 def use_buildds_logs(package_dir, version, distribution, aux_dir):
@@ -149,6 +152,16 @@ def use_buildds_logs(package_dir, version, distribution, aux_dir):
     if not downloaded_files:
         return None
     return downloaded_files
+
+
+def has_missing_symbols(package_dir):
+    missing_re = re.compile(r'^\s*#(DEPRECATED|MISSING)')
+    for filename in symbols_files(package_dir):
+        with open(filename, 't') as f:
+            for line in f:
+                if missing_re.match(line):
+                    return True
+    return False
 
 
 def main():
@@ -178,6 +191,9 @@ def main():
         sys.exit(0)
 
     call_symbols_helper(package_dir, version, logfiles)
+    if has_missing_symbols(package_dir):
+        sys.exit(1)
+
     if git_changes(package_dir):
         git_commit(package_dir, msg.format(version=version))
 

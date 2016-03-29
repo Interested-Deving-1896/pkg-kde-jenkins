@@ -134,13 +134,10 @@
     project-type: matrix
     description: '{description} -- Build'
     block-upstream: true
-    scm:
-        - debian_scm:
-            local_vcs: '{local_vcs}'
-            debian_vcs: '{debian_vcs}'
-            upstream_vcs: '{upstream_vcs}'
-            branches:
-                - local/master
+    execution-strategy:
+        touchstone:
+            expr: 'arch == "amd64"'
+            result: unstable
     axes:
         - axis:
             type: slave
@@ -150,6 +147,13 @@
                 - armel
                 - armhf
                 - i386
+    scm:
+        - debian_scm:
+            local_vcs: '{local_vcs}'
+            debian_vcs: '{debian_vcs}'
+            upstream_vcs: '{upstream_vcs}'
+            branches:
+                - local/master
     triggers:
         - reverse:
             jobs: '{obj:dependencies}'

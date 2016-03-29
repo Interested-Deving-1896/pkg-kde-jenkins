@@ -109,6 +109,7 @@
     description: '{description} -- Multijob'
     # Requires the Multijob plugin
     project-type: multijob
+    node: multijob
     scm:
         - debian_scm:
             local_vcs: '{local_vcs}'
@@ -159,6 +160,7 @@
 - job-template:
     name: '{item}_prepare'
     description: '{description} -- Prepare'
+    node: amd64
     scm:
         - debian_scm:
             local_vcs: '{local_vcs}'

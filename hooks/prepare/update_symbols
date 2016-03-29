@@ -9,7 +9,6 @@ import sys
 
 
 def process_options():
-
     kw = {
         'format': '[%(levelname)s] %(message)s',
     }
@@ -18,9 +17,10 @@ def process_options():
         description='Update symbols files with the logs from the buildds.')
     arg_parser.add_argument('-d', '--package-dir', default='repo')
     arg_parser.add_argument('--debug', action='store_true')
+    arg_parser.add_argument('--version',
+                            default=os.environ.get('VERSION', ''))
     arg_parser.add_argument('--distribution',
-                            default=os.environ.get('DISTRIBUTION',
-                                                   ''))
+                            default=os.environ.get('DISTRIBUTION', ''))
     arg_parser.add_argument('--no-act', action='store_true')
     arg_parser.add_argument('--aux-dir', default='build/update_symbols')
     args = arg_parser.parse_args()
@@ -56,7 +56,9 @@ def get_source_name(package_dir):
         cmd, cwd=package_dir, universal_newlines=True).strip().lower()
 
 
-def get_version(package_dir):
+def get_version(package_dir, version):
+    if version:
+        return version
     cmd = ['dpkg-parsechangelog', '-S', 'version']
     return subprocess.check_output(
         cmd, cwd=package_dir, universal_newlines=True).strip().lower()
@@ -120,7 +122,7 @@ def main():
     print(os.environ)
     aux_dir = ensure_path(options.aux_dir)
     distribution = get_distribution(package_dir, options.distribution)
-    version = get_version(package_dir)
+    version = get_version(package_dir, options.version)
     if distribution == 'unreleased':
         msg = 'Update symbols files.'
         logfiles = use_local_logs()
@@ -137,7 +139,7 @@ def main():
 
     call_symbols_helper(package_dir, version, logfiles)
     if git_changes(package_dir):
-        git_commit(package_dir, msg.format(version=get_version(package_dir)))
+        git_commit(package_dir, msg.format(version=version))
 
 
 if __name__ == '__main__':

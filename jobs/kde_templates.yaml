@@ -22,7 +22,6 @@
         - armhf
         - armel
     jobs:
-        - '{item}_multijob'
         - '{item}_prepare'
         - '{item}_build'
         - '{item}_test':
@@ -42,7 +41,6 @@
         - armhf
         - armel
     jobs:
-        - '{item}_multijob'
         - '{item}_prepare'
         - '{item}_build'
         - '{item}_test':
@@ -62,7 +60,6 @@
         - armhf
         - armel
     jobs:
-        - '{item}_multijob'
         - '{item}_prepare'
         - '{item}_build'
         - '{item}_test':
@@ -105,11 +102,8 @@
                 - 'Automatic packaging'
 
 - job-template:
-    name: '{item}_multijob'
-    description: '{description} -- Multijob'
-    # Requires the Multijob plugin
-    project-type: multijob
-    node: multijob
+    name: '{item}_prepare'
+    description: '{description} -- Prepare'
     scm:
         - debian_scm:
             local_vcs: '{local_vcs}'
@@ -122,57 +116,15 @@
         - pollscm:
             cron: 'H * * * *'
         - script:
-            script: '/srv/pkg-kde-jenkins/scripts/multijob_trigger.sh'
+            script: '/srv/pkg-kde-jenkins/scripts/prepare_trigger.sh'
             cron: 'H H/6 * * *'
-    builders:
-        - multijob:
-            name: Prepare
-            condition: UNSTABLE
-            projects:
-                - name: '{item}_prepare'
-                  current-parameters: true
-                  abort-all-job: true
-                  kill-phase-on: FAILURE
-        - multijob:
-            name: Build amd64
-            condition: UNSTABLE
-            projects:
-                - name: '{item}_build'
-                  current-parameters: true
-                  abort-all-job: true
-                  kill-phase-on: FAILURE
-                  restrict-matrix-project: 'arch == "amd64"'
-        - multijob:
-            name: Build others and Test
-            condition: UNSTABLE
-            projects:
-                - name: '{item}_build'
-                  current-parameters: true
-                  abort-all-job: true
-                  restrict-matrix-project: 'arch != "amd64"'
-            projects:
-                - name: '{item}_test'
-                  current-parameters: true
-                  abort-all-job: true
-    publishers:
-        - aggregate-tests:
-            include-failed-builds: true
-
-- job-template:
-    name: '{item}_prepare'
-    description: '{description} -- Prepare'
-    node: amd64
-    scm:
-        - debian_scm:
-            local_vcs: '{local_vcs}'
-            debian_vcs: '{debian_vcs}'
-            upstream_vcs: '{upstream_vcs}'
-            branches:
-                - debian/master
     builders:
         - shell: '/srv/pkg-kde-jenkins/scripts/clean_build.sh'
         - shell: '/srv/pkg-kde-jenkins/scripts/prepare_build.sh'
     publishers:
+        - trigger:
+            project: '{item}_build'
+            threshold: UNSTABLE
         - archive:
             artifacts: 'build/'
 
@@ -216,6 +168,9 @@
             stable: false
         - shell: '/srv/pkg-kde-jenkins/scripts/build_build.sh'
     publishers:
+        - trigger:
+            project: '{item}_test'
+            threshold: UNSTABLE
         - archive:
             artifacts: 'build/'
 

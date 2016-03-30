@@ -130,4 +130,7 @@ git push --follow-tags
 version=$(dpkg-parsechangelog -S version)
 epochless_version=${version##*:}
 cd "${export_dir}"
+# Fix permissions, else dput tries to do it remotely, which fails if the file
+# is already processed
+find -maxdepth 1 -type f -exec chmod 0644 '{}' '+'
 dput -u local "${source_name}_${epochless_version}_source.changes"

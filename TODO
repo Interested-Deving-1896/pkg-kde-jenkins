@@ -4,11 +4,10 @@
    * stable (local stable ppa and the stable archive)
 
  * Hooks that need to get written:
-   * Update symbols from buildds [Before build]
-   * Update symbols after all local arches have built [After build]
    * Check for file conflicts and Breaks/Replaces
    * Update Standards Version
    * Process private symbols
+   * Update/Refresh patches
 
  * Add git hooks to local repo so that jenkins can trigger rebuilds faster
    (maybe, this can also not be such a good idea)

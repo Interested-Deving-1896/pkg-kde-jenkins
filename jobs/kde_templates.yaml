@@ -104,6 +104,7 @@
 - job-template:
     name: '{item}_prepare'
     description: '{description} -- Prepare'
+    node: prepare
     scm:
         - debian_scm:
             local_vcs: '{local_vcs}'

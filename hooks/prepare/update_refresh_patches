@@ -1,0 +1,202 @@
+#!/usr/bin/env python3
+# -*- coding: utf8 -*-
+# update_refresh_patches, use gbp pq to refresh the current patches
+#  Copyright © 2016 Maximiliano Curia <maxy@gnuservers.com.ar>
+
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+#  GNU General Public License for more details.
+
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, see <http://www.gnu.org/licenses/>.
+
+import argparse
+import glob
+import logging
+import os
+import re
+import subprocess
+import sys
+
+
+def process_options():
+    kw = {
+        'format': '[%(levelname)s] %(message)s',
+    }
+
+    arg_parser = argparse.ArgumentParser(
+        description='Update/Refresh patches using gpb pq')
+    arg_parser.add_argument('-d', '--package-dir', default='repo')
+    arg_parser.add_argument('--debug', action='store_true')
+    arg_parser.add_argument('--version',
+                            default=os.environ.get('VERSION', ''))
+    arg_parser.add_argument('--upstream-tag',
+                            default=os.environ.get('UPSTREAM_TAG', ''))
+    arg_parser.add_argument('--upstream-tag-template',
+                            default=os.environ.get('UPSTREAM_TAG_TEMPLATE',
+                                                   'upstream/{version}'))
+    arg_parser.add_argument('--no-act', action='store_true')
+    args = arg_parser.parse_args()
+
+    if args.debug:
+        kw['level'] = logging.DEBUG
+
+    logging.basicConfig(**kw)
+
+    return args
+
+
+def get_version(package_dir, version):
+    if version:
+        return version
+    cmd = ['dpkg-parsechangelog', '-S', 'version']
+    return subprocess.check_output(
+        cmd, cwd=package_dir, universal_newlines=True).strip().lower()
+
+
+def get_upstream_version(version):
+    epochless_version = re.sub(r'.*:', '', version)
+    upstream_version = re.sub(r'-.*', '', epochless_version)
+    return upstream_version
+
+
+def get_upstream_tag(upstream_tag, version, template):
+    if upstream_tag:
+        return upstream_tag
+    upstream_version = get_upstream_version(version)
+    tag = template.format(version=upstream_version)
+    return tag
+
+
+def verify_tag(package_dir, tag):
+    cmd = ['git', 'rev-parse', '--verify', '-q', 'refs/tags/{}'.format(tag)]
+    process = subprocess.run(cmd, cwd=package_dir)
+    return process.returncode == 0
+
+
+def patches_files(basedir):
+    return glob.glob(os.path.join(basedir, 'debian/patches/*'))
+
+
+def git_commit(workdir, msg):
+    ''' Commit pending changes '''
+    cmd = ['git', 'commit', '-a', '-m', msg]
+    subprocess.call(cmd, cwd=workdir)
+
+
+def checkout_master(workdir):
+    cmd = ['git', 'checkout', 'master']
+    subprocess.run(cmd, cwd=workdir, check=True)
+
+
+def create_upstream_branch(workdir, tag):
+    full_tag = 'refs/tags/{}'.format(tag)
+    cmd = ['git', 'checkout', '-B', 'update_patches/upstream', full_tag]
+    subprocess.run(cmd, cwd=workdir, check=True)
+
+
+def update_upstream_branch(workdir, tag):
+    full_tag = 'refs/tags/{}'.format(tag)
+    cmd = ['git', 'checkout', 'update_patches/upstream']
+    subprocess.run(cmd, cwd=workdir, check=True)
+    cmd = ['git', 'rm', '-rf', '.']
+    subprocess.run(cmd, cwd=workdir, check=True)
+    cmd = ['git', 'checkout', full_tag, '.']
+    subprocess.run(cmd, cwd=workdir, check=True)
+    cmd = ['git', 'commit', '-m', 'Merge new upstream release']
+    subprocess.run(cmd, cwd=workdir, check=True)
+
+
+def create_merged_branch(workdir, tag):
+    cmd = ['git', 'checkout', '-B', 'update_patches/merged']
+    subprocess.run(cmd, cwd=workdir, check=True)
+    cmd = ['git', 'merge', '--no-edit', 'update_patches/upstream']
+    subprocess.run(cmd, cwd=workdir, check=True)
+
+
+def update_merged_branch(workdir):
+    subprocess.run(['git', 'checkout', 'update_patches/merged'],
+                   cwd=workdir, check=True)
+    subprocess.run(['git', 'merge', '--no-edit', 'update_patches/upstream'],
+                   cwd=workdir, check=True)
+
+
+def import_patches(workdir):
+    subprocess.run(['gbp', 'pq', 'drop'], cwd=workdir)
+    subprocess.run(['gbp', 'pq', 'import'], cwd=workdir, check=True)
+    subprocess.run(['gbp', 'pq', 'switch'], cwd=workdir)
+
+
+def current_commit(workdir):
+    return subprocess.check_output(['git', 'rev-parse', 'HEAD'],
+                                   cwd=workdir,
+                                   universal_newlines=True).strip()
+
+
+def update_patches(workdir):
+    subprocess.run(['gbp', 'pq', 'rebase'], cwd=workdir)
+    subprocess.run(['gbp', 'pq', 'export'], cwd=workdir, check=True)
+    git_commit(workdir, msg="Refresh patches")
+
+
+def cherry_pick_changes(workdir, commit):
+    subprocess.run(['git', 'cherry-pick', commit], cwd=workdir, check=True)
+
+
+def main():
+    options = process_options()
+
+    package_dir = options.package_dir
+    if not patches_files(package_dir):
+        logging.info('No patches, nothing to do, skipping')
+        sys.exit(0)
+
+    version = get_version(package_dir, options.version)
+    current_tag = get_upstream_tag(None, version, options.upstream_tag_template)
+    new_tag = get_upstream_tag(options.upstream_tag, version,
+                               options.upstream_tag_template)
+
+    if current_tag == new_tag:
+        logging.info('No new upstream release, nothing to do, skipping')
+        sys.exit(0)
+
+    if (not verify_tag(package_dir, current_tag) or
+            not verify_tag(package_dir, new_tag)):
+        logging.info('Missing tags, skipping')
+        sys.exit(0)
+
+    # Create an upstream branch
+    create_upstream_branch(package_dir, current_tag)
+    # Create a merged branch
+    checkout_master(package_dir)
+    create_merged_branch(package_dir, current_tag)
+    # Import patches
+    import_patches(package_dir)
+    # Import new upstream
+    update_upstream_branch(package_dir, new_tag)
+    update_merged_branch(package_dir)
+    starting_point = current_commit(package_dir)
+    # Rebase/Export patches
+    update_patches(package_dir)
+    last_commit = current_commit(package_dir)
+    # Check back to master branch
+    checkout_master(package_dir)
+
+    if starting_point == last_commit:
+        logging.info('No changes were needed')
+        sys.exit(0)
+
+    if options.no_act:
+        sys.exit(0)
+
+    cherry_pick_changes(package_dir, last_commit)
+
+
+if __name__ == '__main__':
+    main()

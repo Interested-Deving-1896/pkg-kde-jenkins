@@ -106,6 +106,9 @@ git worktree add "${upstream_dir}" "${upstream_tag}"
 echo "Call prepare hooks"
 
 cd "$WORKSPACE"
+export UPSTREAM_TAG="${upstream_tag}"
+export UPSTREAM_TAG_TEMPLATE="$(expand_tag "{version}")"
+
 hooks_dir='/srv/pkg-kde-jenkins/hooks/prepare'
 if [ -d "${hooks_dir}" ]; then
     run-parts --exit-on-error --verbose "${hooks_dir}"

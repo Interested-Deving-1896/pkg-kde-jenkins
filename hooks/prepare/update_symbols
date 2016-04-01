@@ -127,7 +127,7 @@ def use_local_logs(options):
     print('Local')
 
     files = []
-    arches = ['amd64', 'i386', 'armel', 'armhf']
+    arches = ['amd64', 'i386', 'armhf']
     base_url = options.jenkins_url
     job_name = options.job_name
     base_job, _ = job_name.rsplit('_', 2)

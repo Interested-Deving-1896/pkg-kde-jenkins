@@ -20,7 +20,6 @@
         - amd64
         - i386
         - armhf
-        - armel
     jobs:
         - '{item}_prepare'
         - '{item}_build'
@@ -39,7 +38,6 @@
         - amd64
         - i386
         - armhf
-        - armel
     jobs:
         - '{item}_prepare'
         - '{item}_build'
@@ -58,7 +56,6 @@
         - amd64
         - i386
         - armhf
-        - armel
     jobs:
         - '{item}_prepare'
         - '{item}_build'
@@ -145,7 +142,6 @@
             name: arch
             values:
                 - amd64
-                - armel
                 - armhf
                 - i386
     scm:

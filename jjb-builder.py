@@ -334,11 +334,23 @@ def process_dependencies(packages):
     relations = {}
     for package in packages:
         build_depends = package.build_depends
-        relations.setdefault(package.name, {})['build'] = \
+        if package.name not in relations:
+            relations[package.name] = {}
+        if 'reverse_build' not in relations[package.name]:
+            relations[package.name]['reverse_build'] = []
+
+        relations[package.name]['build'] = \
             package_relations(binaries, build_depends)
         test_dependencies = package.tests_depends
         relations[package.name]['test'] = \
             package_relations(binaries, test_dependencies)
+        for dependency in relations[package.name]['build']:
+            if dependency not in relations:
+                relations[dependency] = {}
+            if 'reverse_build' not in relations[dependency]:
+                relations[dependency]['reverse_build'] = []
+            relations[dependency]['reverse_build'].append(package.name)
+
     return relations
 
 
@@ -362,6 +374,8 @@ def prepare_projects(group_tree, dependencies, local_repository, local_vcs):
             item['description'] = package.short_description
             item['build_dependencies'] = list(
                 '{}_build'.format(d) for d in dependencies[name]['build'])
+            item['reverse_build_dependencies'] = ', '.join(
+                list('{}_build'.format(d) for d in dependencies[name]['reverse_build']))
             item['test_dependencies'] = list(
                 '{}_build'.format(d) for d in dependencies[name]['test'])
             if local_vcs:

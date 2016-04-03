@@ -27,6 +27,7 @@
             dependencies: '{obj:test_dependencies}'
             arch: amd64
     dependencies: '{obj:build_dependencies}'
+    reverse_build_dependencies: '{obj:reverse_build_dependencies}'
     description: '{description}'
     local_vcs: '{local_vcs}'
     debian_vcs: '{debian_vcs}'
@@ -45,6 +46,7 @@
             dependencies: '{obj:test_dependencies}'
             arch: amd64
     dependencies: '{obj:build_dependencies}'
+    reverse_build_dependencies: '{obj:reverse_build_dependencies}'
     description: '{description}'
     local_vcs: '{local_vcs}'
     debian_vcs: '{debian_vcs}'
@@ -63,6 +65,7 @@
             dependencies: '{obj:test_dependencies}'
             arch: amd64
     dependencies: '{obj:build_dependencies}'
+    reverse_build_dependencies: '{obj:reverse_build_dependencies}'
     description: '{description}'
     local_vcs: '{local_vcs}'
     debian_vcs: '{debian_vcs}'
@@ -151,10 +154,6 @@
             upstream_vcs: '{upstream_vcs}'
             branches:
                 - local/master
-    triggers:
-        - reverse:
-            jobs: '{obj:dependencies}'
-            result: 'unstable'
     builders:
         - shell: '/srv/pkg-kde-jenkins/scripts/clean_build.sh'
         # Needs the Copy Artifacts plugin
@@ -170,6 +169,13 @@
             threshold: UNSTABLE
         - archive:
             artifacts: 'build/'
+        # Needs the Flexible publisher plugin
+        - conditional-publisher:
+            - condition-kind: never
+              action:
+                 - trigger:
+                     project: '{reverse_build_dependencies}'
+                     condition: UNSTABLE
 
 - job-template:
     name: '{item}_test'
@@ -182,10 +188,6 @@
             upstream_vcs: '{upstream_vcs}'
             branches:
                 - local/master
-    triggers:
-        - reverse:
-            jobs: '{obj:dependencies}'
-            result: 'unstable'
     builders:
         - shell: '/srv/pkg-kde-jenkins/scripts/clean_build.sh'
         - copyartifact:

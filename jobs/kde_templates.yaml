@@ -169,6 +169,7 @@
             threshold: UNSTABLE
         - archive:
             artifacts: 'build/'
+            allow-empty: True
         # Needs the Flexible publisher plugin
         - conditional-publisher:
             - condition-kind: never

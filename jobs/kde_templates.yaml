@@ -154,6 +154,10 @@
             upstream_vcs: '{upstream_vcs}'
             branches:
                 - local/master
+    triggers:
+        - reverse:
+            jobs: ''
+            result: 'unstable'
     builders:
         - shell: '/srv/pkg-kde-jenkins/scripts/clean_build.sh'
         # Needs the Copy Artifacts plugin
@@ -209,6 +213,10 @@
             upstream_vcs: '{upstream_vcs}'
             branches:
                 - local/master
+    triggers:
+        - reverse:
+            jobs: ''
+            result: 'unstable'
     builders:
         - shell: '/srv/pkg-kde-jenkins/scripts/clean_build.sh'
         - copyartifact:

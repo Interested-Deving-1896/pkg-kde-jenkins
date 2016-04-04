@@ -106,6 +106,12 @@ def git_commit(workdir, msg):
     subprocess.call(cmd, cwd=workdir)
 
 
+def git_clean(workdir):
+    ''' Remove not commited files from the worktree '''
+    cmd = ['git', 'clean', '-f']
+    subprocess.call(cmd, cwd=workdir)
+
+
 def call_symbols_helper(package_dir, version, files):
     upstream_version, debian_part = version.split('-', 2)
 
@@ -213,6 +219,8 @@ def main():
 
     if git_changes(package_dir):
         git_commit(package_dir, msg.format(version=version))
+    # Symbols helper lefts some cruft behind
+    git_clean(package_dir)
 
 
 if __name__ == '__main__':

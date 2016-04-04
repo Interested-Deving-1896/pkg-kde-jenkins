@@ -173,9 +173,30 @@
         - conditional-publisher:
             - condition-kind: never
               action:
-                 - trigger:
-                     project: '{reverse_build_dependencies}'
-                     condition: UNSTABLE
+                 - raw:
+                     xml: |
+                         <org.jenkins__ci.plugins.flexible__publish.FlexiblePublisher plugin="flexible-publish@0.15.2">
+                           <publishers>
+                             <org.jenkins__ci.plugins.flexible__publish.ConditionalPublisher>
+                               <condition class="org.jenkins_ci.plugins.run_condition.core.NeverRun" plugin="run-condition@1.0"/>
+                               <publisherList>
+                                 <hudson.tasks.BuildTrigger>
+                                   <childProjects>{reverse_build_dependencies}</childProjects>
+                                   <threshold>
+                                     <name>SUCCESS</name>
+                                     <ordinal>0</ordinal>
+                                     <color>BLUE</color>
+                                     <completeBuild>true</completeBuild>
+                                   </threshold>
+                                 </hudson.tasks.BuildTrigger>
+                               </publisherList>
+                               <runner class="org.jenkins_ci.plugins.run_condition.BuildStepRunner$Fail" plugin="run-condition@1.0"/>
+                               <aggregationCondition class="org.jenkins_ci.plugins.run_condition.core.NeverRun" plugin="run-condition@1.0"/>
+                               <aggregationRunner class="org.jenkins_ci.plugins.run_condition.BuildStepRunner$Fail" plugin="run-condition@1.0"/>
+                               <executionStrategy class="org.jenkins_ci.plugins.flexible_publish.strategy.FailFastExecutionStrategy"/>
+                             </org.jenkins__ci.plugins.flexible__publish.ConditionalPublisher>
+                           </publishers>
+                         </org.jenkins__ci.plugins.flexible__publish.FlexiblePublisher>
 
 - job-template:
     name: '{item}_test'

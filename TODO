@@ -18,3 +18,5 @@
 
  * Talk with Holger about running this on the Debian Jenkins instance
 
+ * Add the aggregate matrix support for the conditional-publisher (currently
+   using raw)

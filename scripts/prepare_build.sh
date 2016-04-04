@@ -95,6 +95,9 @@ if gbp buildpackage --git-verbose --git-tag-only; then
     echo "Added missing tag"
 fi
 
+tag_version=$(echo "$version" | tr ':~' '%_')
+debian_tag="debian/$tag_version"
+
 echo "Prepare upstream worktree"
 
 if [ -d "${upstream_dir}" ]; then
@@ -114,9 +117,13 @@ if [ -d "${hooks_dir}" ]; then
     run-parts --exit-on-error --verbose "${hooks_dir}"
 fi
 
-echo "Add a new changelog entry"
-cd "${repo_dir}"
-${DCH} ${DCH_ARGS}
+if [ -n "$new_upstream_release" ] || \
+    [ "$(git rev-list --left-right --count HEAD...$debian_tag)" != "0	0" ];
+then
+    echo "Add a new changelog entry"
+    cd "${repo_dir}"
+    ${DCH} ${DCH_ARGS}
+fi
 
 echo "Prepare source package"
 cd "${repo_dir}"

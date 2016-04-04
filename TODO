@@ -20,3 +20,6 @@
 
  * Add the aggregate matrix support for the conditional-publisher (currently
    using raw)
+
+ * (prepare) Avoid adding changelog entries if no changes were committed from
+   the previous run.

@@ -117,11 +117,11 @@ if [ -d "${hooks_dir}" ]; then
     run-parts --exit-on-error --verbose "${hooks_dir}"
 fi
 
+cd "${repo_dir}"
 if [ -n "$new_upstream_release" ] || \
     [ "$(git rev-list --left-right --count HEAD...$debian_tag)" != "0	0" ];
 then
     echo "Add a new changelog entry"
-    cd "${repo_dir}"
     ${DCH} ${DCH_ARGS}
 fi
 

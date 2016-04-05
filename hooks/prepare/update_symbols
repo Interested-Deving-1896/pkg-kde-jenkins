@@ -117,6 +117,7 @@ def call_symbols_helper(package_dir, version, files):
 
     cmd = ['pkgkde-symbolshelper', 'batchpatch', '-v', upstream_version]
     cmd.extend(files)
+    logging.debug(cmd)
     try:
         subprocess.check_call(cmd, cwd=package_dir)
     except subprocess.CalledProcessError:
@@ -159,7 +160,8 @@ def use_local_logs(options):
             dir=options.aux_dir, base_job=base_job, arch=arch)
         print(filename)
         save_file(response, filename)
-        files.append(filename)
+        fullname = os.path.abspath(filename)
+        files.append(fullname)
     return files
 
 

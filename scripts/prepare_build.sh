@@ -117,21 +117,25 @@ if [ -d "${hooks_dir}" ]; then
     run-parts --exit-on-error --verbose "${hooks_dir}"
 fi
 
+GBP_ARGS="--git-verbose"
+
 cd "${repo_dir}"
 if [ -n "$new_upstream_release" ] || \
     [ "$(git rev-list --left-right --count HEAD...$debian_tag)" != "0	0" ];
 then
     echo "Add a new changelog entry"
     ${DCH} ${DCH_ARGS}
+    GBP_ARGS="$GBP_ARGS --git-tag"
 fi
 
 echo "Prepare source package"
 cd "${repo_dir}"
 # FIXME: Force changes distribution to unstable, probably a job parameter
 distribution="unstable"
-gbp buildpackage --git-verbose --git-upstream-tag="$(expand_tag)" \
-    --git-export-dir="${export_dir}" --git-tag --git-dist="${distribution}" \
-    --git-overlay -S -us -uc --changes-option="-DDistribution=${distribution}"
+gbp buildpackage --git-upstream-tag="$(expand_tag)" \
+    --git-export-dir="${export_dir}" --git-dist="${distribution}" \
+    --git-overlay ${GBP_ARGS} \
+    -S -us -uc --changes-option="-DDistribution=${distribution}"
 
 # Push
 git push --follow-tags

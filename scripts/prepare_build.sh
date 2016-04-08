@@ -104,6 +104,10 @@ cd "$repo_dir"
 
 prepare_branches
 
+if ! [ -d "$export_dir" ]; then
+    mkdir "$export_dir"
+fi
+
 echo "Add a snapshot changelog entry"
 source_name=$(dpkg-parsechangelog -S source)
 # TODO: Detect native packages and skip the upstream dance
@@ -162,12 +166,12 @@ if [ -n "$new_upstream_release" ]; then
         --upstream-branch=gbp_upstream \
         --no-merge --no-interactive
 elif ! git show-ref --verify --quiet "refs/tags/$upstream_tag"; then
-    uscan --destdir ../build --dehs --download-current-version > ../build/uscan.log
+    uscan --destdir ../build --dehs --download-current-version > "$export_dir/uscan.log"
     downloaded_tarball=$(sed -n -r '
 /<target-path>/ {
     s|</?target-path>||g
     p
-}'../build/uscan.log)
+}' "$export_dir/uscan.log")
     gbp import-orig --pristine-tar \
         --upstream-vcs-tag="$UPSTREAM_VCS_TAG" \
         --upstream-branch=gbp_upstream \

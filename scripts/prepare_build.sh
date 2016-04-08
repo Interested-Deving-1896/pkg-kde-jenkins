@@ -18,19 +18,78 @@
 set -x
 set -e
 
+# TODO: The upstream tag format should be configurable
+# + Add it to the environment vars in the job
+if [ -z "$UPSTREAM_VCS_TAG" ]; then
+    UPSTREAM_VCS_TAG='v%(version)s'
+fi
+
 expand_tag () {
-    # TODO: The upstream tag format should be configurable
-    local upstream_tag_format='v%(version)s'
     local version
     if [ $# -lt 1 ]; then
-        echo "${upstream_tag_format}"
+        echo "$UPSTREAM_VCS_TAG"
         return
     fi
     version="$1"
-    python -c "print '${upstream_tag_format}' % {'version': '${version}'}"
+    python -c "print '$UPSTREAM_VCS_TAG' % {'version': '$version'}"
 }
 tag_to_version () {
-    echo ${1#v}
+    echo ${${1#v}#upstream/} | tr '%_' ':~'
+}
+version_to_tag () {
+    echo $1 | tr ':~' '%_'
+}
+
+
+prepare_branches () {
+    echo "Check for missing branches"
+    if ! git show-ref --verify --quiet refs/remotes/local/master; then
+        git push --set-upstream local master
+        git remote set-branches --add local master
+    fi
+    if ! git show-ref --verify --quiet refs/remotes/local/pristine-tar; then
+        git checkout --orphan pristine-tar
+        git rm -rf .
+        git commit --allow-empty -m 'pristine-tar branch'
+        git push --set-upstream local pristine-tar
+        git remote set-branches --add local pristine-tar
+    fi
+    if ! git show-ref --verify --quiet refs/remotes/local/gbp_upstream; then
+        git checkout --orphan gbp_upstream
+        git rm -rf .
+        git commit --allow-empty -m 'upstream branch'
+        git push --set-upstream local gbp_upstream
+        git remote set-branches --add local gbp_upstream
+    fi
+    git fetch --all
+
+    echo "Merge debian and local"
+    git checkout -B master debian/master
+    git merge refs/remotes/local/master
+    git branch --set-upstream-to=local/master
+
+    echo "Update pristine-tar and upstream"
+    git checkout -B pristine-tar refs/remotes/local/pristine-tar
+    git branch --set-upstream-to=local/pristine-tar
+
+    git checkout -B gbp_upstream refs/remotes/local/gbp_upstream
+    git branch --set-upstream-to=local/gbp_upstream
+
+    echo "Config remote"
+    if ! git config --get-all remote.local.push | grep -q 'refs/heads/master';
+    then
+        git config --add remote.local.push refs/heads/master
+    fi
+    if ! git config --get-all remote.local.push | grep -q 'refs/heads/pristine-tar';
+    then
+        git config --add remote.local.push refs/heads/pristine-tar
+    fi
+    if ! git config --get-all remote.local.push | grep -q 'refs/heads/gbp_upstream';
+    then
+        git config --add remote.local.push refs/heads/gbp_upstream
+    fi
+    echo "Back to master branch"
+    git checkout master
 }
 
 export_dir="$(pwd)/build"
@@ -41,53 +100,47 @@ if [ -z "$WORKSPACE" ]; then
     WORKSPACE=$(pwd)
 fi
 
-echo "Merge debian and local"
-cd "${repo_dir}"
-git checkout -B master debian/master
-if ! git show-ref --verify --quiet refs/remotes/local/master; then
-    git push --set-upstream local master
-else
-    git merge refs/remotes/local/master
-fi
-git remote set-branches --add local master
-git fetch --all
-git branch --set-upstream-to=local/master
+prepare_branches
 
 echo "Add a snapshot changelog entry"
 source_name=$(dpkg-parsechangelog -S source)
-# TODO: Detect native packages
+# TODO: Detect native packages and skip the upstream dance
 version=$(dpkg-parsechangelog -S version)
 epochless_version=${version##*:}
 upstream_version=${epochless_version%%-*}
-# TODO: What about dfsg tags?
-upstream_tag=$(expand_tag "${upstream_version}")
+# TODO: What about dfsg changes
+upstream_vcs_tag=$(expand_tag "$(version_to_tag "$upstream_version")")
+upstream_tag="upstream/$(version_to_tag "$upstream_version")"
 # TODO: Detect target distribution or use DEP14
 distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
 if [ "$distribution" = "unreleased" ]; then
     distribution="unstable"
 fi
 
-# ignore the "unstable" (*.*.80 + as well as the rc, alpha and beta tags) releases
+DCH="gbp dch"
+DCH_ARGS="--verbose --snapshot --commit"
+
+# ignore the "unstable" (*.*.70 + as well as the rc, alpha and beta tags) releases
 release_tag=$(git tag --sort='version:refname' -l "$(expand_tag '*')" | \
     sed -n -r '
-/([89][0-9]+|(rc|alpha|beta)[0-9]*)$/d
-/^'"${upstream_tag}"'$/,$ {
-    /^'"${upstream_tag}"'$/d
+/([789][0-9]+|(rc|alpha|beta)[0-9]*)$/d
+/^'"$upstream_vcs_tag"'$/,$ {
+    /^'"$upstream_vcs_tag"'$/d
     p
 }' | tail -1)
 
-DCH="gbp dch"
-DCH_ARGS="--verbose --snapshot --upstream-tag='$(expand_tag)' --commit"
-
-if [ -n "${release_tag}" ]; then
-    if ! git diff --quiet "${upstream_tag}" "${release_tag}"; then
-        new_upstream_release="$(tag_to_version ${release_tag})"
-        new_version="${new_upstream_release}-1"
-        if [ "${version%%:*}" != "${version}" ]; then
-            new_version="${version%%:*}:${new_version}"
+if [ -n "$release_tag" ]; then
+    if ! git diff --quiet "$upstream_vcs_tag" "$release_tag"; then
+        new_upstream_release="$(tag_to_version $release_tag)"
+        new_version="$new_upstream_release-1"
+        if [ "${version%%:*}" != "$version" ]; then
+            new_version="${version%%:*}:$new_version"
         fi
-        DCH_ARGS="${DCH_ARGS} --new-version=${new_version}"
-        upstream_tag="${release_tag}"
+        # TODO: This also needs to take into account dsfg versions
+        DCH_ARGS="$DCH_ARGS --new-version=$new_version"
+
+        upstream_vcs_tag="$release_tag"
+        upstream_tag="upstream/$(version_to_tag "$release_tag")"
     fi
 fi
 
@@ -98,19 +151,40 @@ fi
 tag_version=$(echo "$version" | tr ':~' '%_')
 debian_tag="debian/$tag_version"
 
+# TODO:
+# if new upstream release, use gbp import-orig to fetch the new tarball
+# else check it the upstream_tag is present and use uscan if not.
+if [ -n "$new_upstream_release" ]; then
+    gbp import-orig --uscan --pristine-tar \
+        --upstream-vcs-tag="$UPSTREAM_VCS_TAG" \
+        --upstream-branch=gbp_upstream \
+        --no-merge --no-interactive
+elif ! git show-ref --verify --quiet "refs/tags/$upstream_tag"; then
+    uscan --destdir ../build --dehs --download-current-version > ../build/uscan.log
+    downloaded_tarball=$(sed -n -r '
+/<target-path>/ {
+    s|</?target-path>||g
+    p
+}'../build/uscan.log)
+    gbp import-orig --pristine-tar \
+        --upstream-vcs-tag="$UPSTREAM_VCS_TAG" \
+        --upstream-branch=gbp_upstream \
+        --no-merge --no-interactive "$downloaded_tarball"
+fi
+
 echo "Prepare upstream worktree"
 
 if [ -d "${upstream_dir}" ]; then
     rm -rf "${upstream_dir}"
     git worktree prune
 fi
-git worktree add "${upstream_dir}" "${upstream_tag}"
+git worktree add "$upstream_dir" "$upstream_tag"
 
 echo "Call prepare hooks"
 
 cd "$WORKSPACE"
 export UPSTREAM_TAG="${upstream_tag}"
-export UPSTREAM_TAG_TEMPLATE="$(expand_tag "{version}")"
+export UPSTREAM_TAG_TEMPLATE="upstream/{version}"
 
 hooks_dir='/srv/pkg-kde-jenkins/hooks/prepare'
 if [ -d "${hooks_dir}" ]; then
@@ -132,7 +206,7 @@ echo "Prepare source package"
 cd "${repo_dir}"
 # FIXME: Force changes distribution to unstable, probably a job parameter
 distribution="unstable"
-gbp buildpackage --git-upstream-tag="$(expand_tag)" \
+gbp buildpackage \
     --git-export-dir="${export_dir}" --git-dist="${distribution}" \
     --git-overlay ${GBP_ARGS} \
     -S -us -uc --changes-option="-DDistribution=${distribution}"

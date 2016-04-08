@@ -49,14 +49,14 @@ prepare_branches () {
     fi
     if ! git show-ref --verify --quiet refs/remotes/local/pristine-tar; then
         git checkout --orphan pristine-tar
-        git rm -rf .
+        git rm --ignore-unmatch -rf .
         git commit --allow-empty -m 'pristine-tar branch'
         git push --set-upstream local pristine-tar
         git remote set-branches --add local pristine-tar
     fi
     if ! git show-ref --verify --quiet refs/remotes/local/gbp_upstream; then
         git checkout --orphan gbp_upstream
-        git rm -rf .
+        git rm --ignore-unmatch -rf .
         git commit --allow-empty -m 'upstream branch'
         git push --set-upstream local gbp_upstream
         git remote set-branches --add local gbp_upstream

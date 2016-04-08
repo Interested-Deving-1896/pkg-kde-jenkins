@@ -100,6 +100,8 @@ if [ -z "$WORKSPACE" ]; then
     WORKSPACE=$(pwd)
 fi
 
+cd "$repo_dir"
+
 prepare_branches
 
 echo "Add a snapshot changelog entry"

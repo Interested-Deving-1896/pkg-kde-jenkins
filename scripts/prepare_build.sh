@@ -45,22 +45,22 @@ prepare_branches () {
     echo "Check for missing branches"
     if ! git show-ref --verify --quiet refs/remotes/local/master; then
         git push --set-upstream local master
-        git remote set-branches --add local master
     fi
     if ! git show-ref --verify --quiet refs/remotes/local/pristine-tar; then
         git checkout --orphan pristine-tar
         git rm --ignore-unmatch -rf .
         git commit --allow-empty -m 'pristine-tar branch'
         git push --set-upstream local pristine-tar
-        git remote set-branches --add local pristine-tar
     fi
     if ! git show-ref --verify --quiet refs/remotes/local/gbp_upstream; then
         git checkout --orphan gbp_upstream
         git rm --ignore-unmatch -rf .
         git commit --allow-empty -m 'upstream branch'
         git push --set-upstream local gbp_upstream
-        git remote set-branches --add local gbp_upstream
     fi
+    git remote set-branches --add local master
+    git remote set-branches --add local pristine-tar
+    git remote set-branches --add local gbp_upstream
     git fetch --all
 
     echo "Merge debian and local"

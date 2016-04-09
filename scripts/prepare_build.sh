@@ -34,7 +34,9 @@ expand_tag () {
     python -c "print '$UPSTREAM_VCS_TAG' % {'version': '$version'}"
 }
 tag_to_version () {
-    echo ${${1#v}#upstream/} | tr '%_' ':~'
+    let tag="${1#v}"
+    tag="${tag#upstream/}"
+    echo "$tag" | tr '%_' ':~'
 }
 version_to_tag () {
     echo $1 | tr ':~' '%_'

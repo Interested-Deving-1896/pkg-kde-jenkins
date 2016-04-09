@@ -19,11 +19,16 @@
 set -e
 set -x
 set
-if [ -z "${WORKSPACE}" ]; then
-    WORKSPACE=$(pwd)
+if [ -z "$WORKSPACE" ]; then
+    if [ -d "workspace/$JOB_NAME" ]; then
+        cd "workspace/$JOB_NAME"
+        WORKSPACE=$(pwd)
+    else
+        exit 1
+    fi
 fi
 
-if [ ! -d "${WORKSPACE}/repo" ]; then
+if [ ! -d "$WORKSPACE/repo" ]; then
     # not scm polled, skip
     exit 1
 fi

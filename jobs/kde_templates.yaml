@@ -97,7 +97,6 @@
             wipe-workspace: false
             skip-tag: true
             prune: true
-            force-polling-using-workspace: true
             # This should be a configuration parameter, somehow
             excluded-users:
                 - 'Automatic packaging'

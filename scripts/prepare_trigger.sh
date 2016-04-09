@@ -19,7 +19,7 @@
 set -e
 set -x
 set
-if [ -n "${WORKSPACE}" ]; then
+if [ -z "${WORKSPACE}" ]; then
     WORKSPACE=$(pwd)
 fi
 

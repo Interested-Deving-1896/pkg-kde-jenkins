@@ -25,6 +25,8 @@ if [ ! -d "${WORKSPACE}/repo" ]; then
 fi
 
 cd "${WORKSPACE}/repo"
+# The jenkins plugin won't fetch the tags by default
+git fetch --all --tags
 
 expand_tag () {
     # TODO: The upstream tag format should be configurable

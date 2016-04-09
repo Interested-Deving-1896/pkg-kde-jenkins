@@ -146,7 +146,8 @@ if [ -n "$release_tag" ]; then
         DCH_ARGS="$DCH_ARGS --new-version=$new_version"
 
         upstream_vcs_tag="$release_tag"
-        upstream_tag="upstream/$(version_to_tag "$release_tag")"
+        new_upstream_version="$(tag_to_version "$release_tag")"
+        upstream_tag="upstream/$(version_to_tag "$new_upstream_version")"
     fi
 fi
 

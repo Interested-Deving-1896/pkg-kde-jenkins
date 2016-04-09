@@ -18,6 +18,10 @@
 
 set -e
 set -x
+set
+if [ -n "${WORKSPACE}" ]; then
+    WORKSPACE=$(pwd)
+fi
 
 if [ ! -d "${WORKSPACE}/repo" ]; then
     # not scm polled, skip

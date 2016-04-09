@@ -215,7 +215,7 @@ cd "${repo_dir}"
 distribution="unstable"
 gbp buildpackage \
     --git-export-dir="${export_dir}" --git-dist="${distribution}" \
-    --git-overlay ${GBP_ARGS} \
+    --git-overlay --git-no-sign-tags ${GBP_ARGS} \
     -S -us -uc --changes-option="-DDistribution=${distribution}"
 
 # Push

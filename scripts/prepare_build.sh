@@ -117,6 +117,7 @@ upstream_version=${epochless_version%%-*}
 # TODO: What about dfsg changes
 upstream_vcs_tag=$(expand_tag "$(version_to_tag "$upstream_version")")
 upstream_tag="upstream/$(version_to_tag "$upstream_version")"
+current_upstream_tag="$upstream_tag"
 # TODO: Detect target distribution or use DEP14
 distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
 if [ "$distribution" = "unreleased" ]; then
@@ -161,12 +162,7 @@ debian_tag="debian/$tag_version"
 # TODO:
 # if new upstream release, use gbp import-orig to fetch the new tarball
 # else check it the upstream_tag is present and use uscan if not.
-if [ -n "$new_upstream_release" ]; then
-    gbp import-orig --uscan --pristine-tar \
-        --upstream-vcs-tag="$UPSTREAM_VCS_TAG" \
-        --upstream-branch=gbp_upstream \
-        --no-merge --no-interactive
-elif ! git show-ref --verify --quiet "refs/tags/$upstream_tag"; then
+if ! git show-ref --verify --quiet "refs/tags/$current_upstream_tag"; then
     uscan --destdir ../build --dehs --download-current-version > "$export_dir/uscan.log"
     downloaded_tarball=$(sed -n -r '
 /<target-path>/ {
@@ -178,7 +174,13 @@ elif ! git show-ref --verify --quiet "refs/tags/$upstream_tag"; then
         --upstream-branch=gbp_upstream \
         --no-merge --no-interactive "$downloaded_tarball"
 fi
-# Push new upstream tag, if any
+if [ -n "$new_upstream_release" ]; then
+    gbp import-orig --uscan --pristine-tar \
+        --upstream-vcs-tag="$UPSTREAM_VCS_TAG" \
+        --upstream-branch=gbp_upstream \
+        --no-merge --no-interactive
+fi
+# Push new upstream tags, if any
 git push --follow-tags
 
 echo "Prepare upstream worktree"

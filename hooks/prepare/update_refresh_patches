@@ -95,35 +95,19 @@ def checkout_master(workdir):
     subprocess.run(cmd, cwd=workdir, check=True)
 
 
-def create_upstream_branch(workdir, tag):
-    full_tag = 'refs/tags/{}'.format(tag)
-    cmd = ['git', 'checkout', '-B', 'update_patches/upstream', full_tag]
-    subprocess.run(cmd, cwd=workdir, check=True)
-
-
-def update_upstream_branch(workdir, tag):
-    full_tag = 'refs/tags/{}'.format(tag)
-    cmd = ['git', 'checkout', 'update_patches/upstream']
-    subprocess.run(cmd, cwd=workdir, check=True)
-    cmd = ['git', 'rm', '-rf', '.']
-    subprocess.run(cmd, cwd=workdir, check=True)
-    cmd = ['git', 'checkout', full_tag, '.']
-    subprocess.run(cmd, cwd=workdir, check=True)
-    cmd = ['git', 'commit', '-m', 'Merge new upstream release']
-    subprocess.run(cmd, cwd=workdir, check=True)
-
-
 def create_merged_branch(workdir, tag):
     cmd = ['git', 'checkout', '-B', 'update_patches/merged']
     subprocess.run(cmd, cwd=workdir, check=True)
-    cmd = ['git', 'merge', '--no-edit', 'update_patches/upstream']
+    full_tag = 'refs/tags/{}'.format(tag)
+    cmd = ['git', 'merge', '--no-edit', full_tag]
     subprocess.run(cmd, cwd=workdir, check=True)
 
 
-def update_merged_branch(workdir):
+def update_merged_branch(workdir, tag):
     subprocess.run(['git', 'checkout', 'update_patches/merged'],
                    cwd=workdir, check=True)
-    subprocess.run(['git', 'merge', '--no-edit', 'update_patches/upstream'],
+    full_tag = 'refs/tags/{}'.format(tag)
+    subprocess.run(['git', 'merge', '--no-edit', full_tag],
                    cwd=workdir, check=True)
 
 
@@ -171,16 +155,12 @@ def main():
         logging.info('Missing tags, skipping')
         sys.exit(0)
 
-    # Create an upstream branch
-    create_upstream_branch(package_dir, current_tag)
     # Create a merged branch
-    checkout_master(package_dir)
     create_merged_branch(package_dir, current_tag)
     # Import patches
     import_patches(package_dir)
     # Import new upstream
-    update_upstream_branch(package_dir, new_tag)
-    update_merged_branch(package_dir)
+    update_merged_branch(package_dir, new_tag)
     starting_point = current_commit(package_dir)
     # Rebase/Export patches
     update_patches(package_dir)

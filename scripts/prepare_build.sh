@@ -210,6 +210,8 @@ then
     ${DCH} ${DCH_ARGS}
     GBP_ARGS="$GBP_ARGS --git-tag"
 fi
+# Push new changelog entry
+git push --follow-tags
 
 echo "Prepare source package"
 cd "${repo_dir}"

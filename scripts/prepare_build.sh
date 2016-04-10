@@ -178,6 +178,8 @@ elif ! git show-ref --verify --quiet "refs/tags/$upstream_tag"; then
         --upstream-branch=gbp_upstream \
         --no-merge --no-interactive "$downloaded_tarball"
 fi
+# Push new upstream tag, if any
+git push --follow-tags
 
 echo "Prepare upstream worktree"
 

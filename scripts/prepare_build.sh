@@ -174,7 +174,8 @@ if ! git show-ref --verify --quiet "refs/tags/$current_upstream_tag"; then
         --upstream-branch=gbp_upstream \
         --no-merge --no-interactive "$downloaded_tarball"
 fi
-if [ -n "$new_upstream_release" ]; then
+if [ -n "$new_upstream_release" ] && \
+    ! git show-ref --verify --quiet "refs/tags/$upstream_tag"; then
     gbp import-orig --uscan --pristine-tar \
         --upstream-vcs-tag="$UPSTREAM_VCS_TAG" \
         --upstream-branch=gbp_upstream \

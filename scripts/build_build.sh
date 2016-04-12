@@ -64,6 +64,7 @@ version=$(dpkg-parsechangelog -S version)
 epochless_version=${version##*:}
 
 # Configure an upstream so push does something
+git remote set-branches --add local master
 git branch --set-upstream-to=local/master
 
 # TODO: Detect target distribution or use DEP14

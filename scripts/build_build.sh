@@ -19,7 +19,7 @@ set -e
 
 if [ -z "$arch" ]; then
     # Just a default in case I want to run this without jenkins
-    arch="amd64"
+    export arch="amd64"
 fi
 if [ -z "$WORKSPACE" ]; then
     # Just in case we want to run this without jenkins

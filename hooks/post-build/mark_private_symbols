@@ -3,6 +3,11 @@
 set -e
 set -x
 
+if [ "$arch" != "amd64" ]; then
+    # Run this hook only once per _build job
+    exit 0
+fi
+
 export_dir="$(pwd)/build"
 repo_dir="$(pwd)/repo"
 

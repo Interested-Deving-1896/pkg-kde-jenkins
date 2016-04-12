@@ -1,5 +1,8 @@
 #!/bin/sh
 
+set -e
+set -x
+
 export_dir="$(pwd)/build"
 repo_dir="$(pwd)/repo"
 
@@ -32,4 +35,5 @@ if [ -n "$changes" ]; then
     # Use a different author so the commit triggers a rebuild
     git commit -a -m 'Mark private headers' \
         --author="Mark headers hook <maxy+mark_private_symbols@gnuservers.com.ar>"
+    git push
 fi

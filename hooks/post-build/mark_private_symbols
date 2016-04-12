@@ -33,7 +33,8 @@ git clean -f
 changes=$(git status --porcelain)
 if [ -n "$changes" ]; then
     # Use a different author so the commit triggers a rebuild
-    git commit -a -m 'Mark private headers' \
-        --author="Mark headers hook <maxy+mark_private_symbols@gnuservers.com.ar>"
+    git config --set user.name "Mark headers hook"
+    git commit -a -m 'Mark private headers'
+    git config --unset user.name
     git push
 fi

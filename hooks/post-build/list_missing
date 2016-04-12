@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -e
+# Default values to make testing easier
+: ${EXPORT_DIR="$(pwd)/build"}
+: ${SOURCE_NAME="*"}
+: ${arch="amd64"}
+
+build_file_pattern="$EXPORT_DIR/${SOURCE_NAME}_*_$arch.build"
+build_file=$(ls $build_file_pattern)
+
+missing=$(awk  'BEGIN { started = 0 }
+/^=== Start list-missing/ { started = 1; next }
+/^=== End list-missing/ { started = 0 }
+started == 1 { print }' "$build_file")
+
+if [ -n "$missing" ]; then
+    echo "$missing"
+    exit 1
+fi

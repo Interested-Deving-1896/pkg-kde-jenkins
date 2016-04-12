@@ -23,8 +23,14 @@ if [ -z "$arch" ]; then
 fi
 if [ -z "$WORKSPACE" ]; then
     # Just in case we want to run this without jenkins
-    WORKSPACE=$(pwd)
+    export WORKSPACE=$(pwd)
 fi
+
+export_dir="$WORKSPACE/build"
+repo_dir="$WORKSPACE/repo"
+
+export EXPORT_DIR="$export_dir"
+export REPO_DIR="$repo_dir"
 
 packages_for_this_arch () {
     arch="$1"
@@ -53,9 +59,6 @@ in_arch {
     done
     return 1
 }
-
-export_dir="$(pwd)/build"
-repo_dir="$(pwd)/repo"
 
 echo "Get the build information"
 cd "$repo_dir"

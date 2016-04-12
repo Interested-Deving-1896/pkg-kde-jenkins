@@ -1,0 +1,35 @@
+#!/bin/sh
+
+export_dir="$(pwd)/build"
+repo_dir="$(pwd)/repo"
+
+export tmpdir=$(mktemp -d)
+delete_tmpdir () {
+    rm -rf "$export_tmpdir"
+}
+trap delete_tmpdir EXIT
+
+if ! ls ""$export_dir/*-dev_*.deb"; then
+    echo "No -dev packages, ignoring"
+    exit 0
+fi
+
+for devpkg in "$export_dir/*-dev_*.deb"; do
+    dpkg -x "$devpkg" "$tmpdir"
+done
+
+if ! [ -d "$tmpdir/usr/include" ]; then
+    echo "The -dev package contains no header files"
+    exit 0
+fi
+
+cd "$repo_dir"
+WRITERESULTS=1 pkgkde-mark-private-symbols "$tmpdir/usr/include"
+git clean -f
+
+changes=$(git status --porcelain)
+if [ -n "$changes" ]; then
+    # Use a different author so the commit triggers a rebuild
+    git commit -a -m 'Mark private headers' \
+        --author="Mark headers hook <maxy+mark_private_symbols@gnuservers.com.ar>"
+fi

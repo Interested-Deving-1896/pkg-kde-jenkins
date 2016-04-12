@@ -125,7 +125,7 @@ if [ "$distribution" = "unreleased" ]; then
 fi
 
 DCH="gbp dch"
-DCH_ARGS="--verbose --snapshot --commit"
+DCH_ARGS="--verbose --snapshot --commit --multimaint-merge"
 
 if [ "kgamma5" = "${JOB_NAME%_*}" ]; then
     versions="[5-9]*"

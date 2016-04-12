@@ -25,10 +25,14 @@ run_adt () {
 
 if [ -z "$arch" ]; then
     # Just a default in case I want to run this without jenkins
-    arch="amd64"
+    export arch="amd64"
 fi
-export_dir="$(pwd)/build"
-repo_dir="$(pwd)/repo"
+if [ -z "$WORKSPACE" ]; then
+    # Just in case we want to run this without jenkins
+    export WORKSPACE=$(pwd)
+fi
+export repo_dir="$WORKSPACE/repo"
+export export_dir="$WORKSPACE/build"
 
 echo "Get the information"
 
@@ -46,6 +50,7 @@ fi
 
 echo "Call pre-test hooks"
 
+cd "$WORKSPACE"
 hooks_dir='/srv/pkg-kde-jenkins/hooks/pre-test'
 if [ -d "$hooks_dir" ]; then
     run-parts --exit-on-error "$hooks_dir"
@@ -71,10 +76,9 @@ if [ -f debian/tests/control ]; then
     run_adt
 fi
 
-cd "$export_dir"
-
 echo "Call post-test hooks"
 
+cd "$WORKSPACE"
 hooks_dir='/srv/pkg-kde-jenkins/hooks/post-test'
 if [ -d "$hooks_dir" ]; then
     run-parts --exit-on-error "$hooks_dir"

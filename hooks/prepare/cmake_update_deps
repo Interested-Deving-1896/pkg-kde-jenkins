@@ -1398,7 +1398,7 @@ def process_options():
     arg_parser.add_argument('-c', '--control', default='debian/control')
     arg_parser.add_argument('-d', '--package-dir', default='repo')
     arg_parser.add_argument('-u', '--upstream-dir', default='upstream')
-    arg_parser.add_argument('--debug', default=False)
+    arg_parser.add_argument('--debug', action='store_true')
     arg_parser.add_argument('cmake_files', nargs='*',
                             default=['CMakeLists.txt'])
     args = arg_parser.parse_args()

@@ -31,8 +31,10 @@ if [ -z "$WORKSPACE" ]; then
     # Just in case we want to run this without jenkins
     export WORKSPACE=$(pwd)
 fi
-export repo_dir="$WORKSPACE/repo"
-export export_dir="$WORKSPACE/build"
+repo_dir="$WORKSPACE/repo"
+export REPO_DIR="$repo_dir"
+export_dir="$WORKSPACE/build"
+export EXPORT_DIR="$export_dir"
 
 echo "Get the information"
 
@@ -42,6 +44,8 @@ epochless_version=${version##*:}
 source_name=$(dpkg-parsechangelog -S source)
 source_changes="$export_dir/${source_name}_${epochless_version}_source.changes"
 arch_changes="$export_dir/${source_name}_${epochless_version}_$arch.changes"
+export CHANGES_FILE="$arch_changes"
+
 # TODO: Detect target distribution or use DEP14
 distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
 if [ "$distribution" = "unreleased" ]; then

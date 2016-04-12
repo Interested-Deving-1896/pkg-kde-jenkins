@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 : ${STANDARDS_VERSION="3.9.8"}
 : ${repo_dir="$(pwd)/repo"}

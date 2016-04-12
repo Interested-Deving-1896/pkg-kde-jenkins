@@ -62,8 +62,13 @@ upstream_version=${epochless_version%%-*}
 # TODO: What about dfsg tags?
 upstream_tag=$(expand_tag "${upstream_version}")
 
+if [ "kgamma5" = "${JOB_NAME%_*}" ]; then
+    versions="[5-9]*"
+else
+    versions="*"
+fi
 # ignore the "unstable" (*.*.70 + as well as the rc, alpha and beta tags) releases
-release_tag=$(git tag --sort='version:refname' -l "$(expand_tag '*')" | \
+release_tag=$(git tag --sort='version:refname' -l "$(expand_tag "$versions")" | \
     sed -n -r '
 /([789][0-9]+|(rc|alpha|beta)[0-9]*)$/d
 /^'"${upstream_tag}"'$/,$ {

@@ -63,6 +63,9 @@ source_name=$(dpkg-parsechangelog -S source)
 version=$(dpkg-parsechangelog -S version)
 epochless_version=${version##*:}
 
+# Configure an upstream so push does something
+git branch --set-upstream-to=local/master
+
 # TODO: Detect target distribution or use DEP14
 distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
 if [ "$distribution" = "unreleased" ]; then

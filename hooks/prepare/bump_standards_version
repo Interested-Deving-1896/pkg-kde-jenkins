@@ -1,10 +1,9 @@
 #!/bin/sh
 
 : ${STANDARDS_VERSION="3.9.8"}
+: ${repo_dir="$(pwd)/repo"}
 
 set -e
-
-repo_dir="$(pwd)/repo"
 
 cd "$repo_dir"
 

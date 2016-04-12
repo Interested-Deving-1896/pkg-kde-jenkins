@@ -12,12 +12,12 @@ delete_tmpdir () {
 }
 trap delete_tmpdir EXIT
 
-if ! ls $export_dir/*-dev_*.deb; then
+if ! ls "$export_dir"/*-dev_*.deb; then
     echo "No -dev packages, ignoring"
     exit 0
 fi
 
-for devpkg in "$export_dir/*-dev_*.deb"; do
+for devpkg in "$export_dir"/*-dev_*.deb; do
     dpkg -x "$devpkg" "$tmpdir"
 done
 

@@ -134,6 +134,7 @@ export MERGE_UPSTREAM
 
 DCH="gbp dch"
 DCH_ARGS="--verbose --snapshot --commit --multimaint-merge"
+DCH_ARGS="$DCH_ARGS --upstream-branch=gbp_upstream"
 
 if [ "kgamma5" = "${JOB_NAME%_*}" ]; then
     versions="[5-9]*"

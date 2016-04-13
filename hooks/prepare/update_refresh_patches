@@ -41,7 +41,9 @@ def process_options():
     arg_parser.add_argument('--upstream-tag-template',
                             default=os.environ.get('UPSTREAM_TAG_TEMPLATE',
                                                    'upstream/{version}'))
-    arg_parser.add_argument('--no-act', action='store_true')
+    arg_parser.add_argument(
+        '--merged-upstream', action='store_true',
+        default=('true' == os.environ.get('MERGE_UPSTREAM', '').lower()))
     args = arg_parser.parse_args()
 
     if args.debug:
@@ -95,16 +97,16 @@ def checkout_master(workdir):
     subprocess.run(cmd, cwd=workdir, check=True)
 
 
-def create_merged_branch(workdir, tag):
-    cmd = ['git', 'checkout', '-B', 'update_patches/merged']
+def create_merged_branch(workdir, tag, merged_branch):
+    cmd = ['git', 'checkout', '-B', merged_branch]
     subprocess.run(cmd, cwd=workdir, check=True)
     full_tag = 'refs/tags/{}'.format(tag)
     cmd = ['git', 'merge', '--no-edit', full_tag]
     subprocess.run(cmd, cwd=workdir, check=True)
 
 
-def update_merged_branch(workdir, tag):
-    subprocess.run(['git', 'checkout', 'update_patches/merged'],
+def update_merged_branch(workdir, tag, merged_branch):
+    subprocess.run(['git', 'checkout', merged_branch],
                    cwd=workdir, check=True)
     full_tag = 'refs/tags/{}'.format(tag)
     subprocess.run(['git', 'merge', '--no-edit', full_tag],
@@ -155,12 +157,18 @@ def main():
         logging.info('Missing tags, skipping')
         sys.exit(0)
 
-    # Create a merged branch
-    create_merged_branch(package_dir, current_tag)
+    merged_branch = 'master'
+    if not options.merged_upstream:
+        merged_branch = 'update_patches/merged'
+        # Create a merged branch
+        create_merged_branch(package_dir, current_tag, merged_branch)
+
     # Import patches
     import_patches(package_dir)
+
     # Import new upstream
-    update_merged_branch(package_dir, new_tag)
+    update_merged_branch(package_dir, new_tag, merged_branch)
+
     starting_point = current_commit(package_dir)
     # Rebase/Export patches
     update_patches(package_dir)
@@ -172,10 +180,8 @@ def main():
         logging.info('No changes were needed')
         sys.exit(0)
 
-    if options.no_act:
-        sys.exit(0)
-
-    cherry_pick_changes(package_dir, last_commit)
+    if not options.merged_upstream:
+        cherry_pick_changes(package_dir, last_commit)
 
 
 if __name__ == '__main__':

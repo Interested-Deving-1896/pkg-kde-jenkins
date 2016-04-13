@@ -216,6 +216,7 @@ if [ -d "${hooks_dir}" ]; then
     run-parts --exit-on-error --verbose "${hooks_dir}"
 fi
 
+cd "${repo_dir}"
 if [ -n "$MERGE_UPSTREAM" ]; then
     git merge --no-edit "refs/tags/$upstream_tag"
 fi

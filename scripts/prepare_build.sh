@@ -217,11 +217,6 @@ if [ -d "${hooks_dir}" ]; then
     run-parts --exit-on-error --verbose "${hooks_dir}"
 fi
 
-cd "${repo_dir}"
-if [ -n "$MERGE_UPSTREAM" ]; then
-    git merge --no-edit "refs/tags/$upstream_tag"
-fi
-
 GBP_ARGS="--git-verbose"
 
 cd "${repo_dir}"
@@ -232,6 +227,12 @@ then
     ${DCH} ${DCH_ARGS}
     GBP_ARGS="$GBP_ARGS --git-tag"
 fi
+
+cd "${repo_dir}"
+if [ -n "$MERGE_UPSTREAM" ]; then
+    git merge --no-edit "refs/tags/$upstream_tag"
+fi
+
 # Push new changelog entry
 git push --follow-tags
 

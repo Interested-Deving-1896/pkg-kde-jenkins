@@ -124,6 +124,14 @@ if [ "$distribution" = "unreleased" ]; then
     distribution="unstable"
 fi
 
+MERGE_UPSTREAM=$(python3 -c '
+import configparser
+c = configparser.ConfigParser()
+c.read("adebian/gbp.conf")
+print(c.getboolean("import-orig", "merge", fallback=""))
+')
+export MERGE_UPSTREAM
+
 DCH="gbp dch"
 DCH_ARGS="--verbose --snapshot --commit --multimaint-merge"
 
@@ -165,9 +173,11 @@ fi
 tag_version=$(echo "$version" | tr ':~' '%_')
 debian_tag="debian/$tag_version"
 
-# TODO:
-# if new upstream release, use gbp import-orig to fetch the new tarball
-# else check it the upstream_tag is present and use uscan if not.
+# We merge the upstream release (if needed) after calling the hooks
+IMPORT_ORIG_ARGS="--pristine-tar --upstream-branch=gbp_upstream"
+IMPORT_ORIG_ARGS="$IMPORT_ORIG_ARGS --no-interactive --no-merge"
+
+# check it the upstream_tag is present and use uscan if not.
 if ! git show-ref --verify --quiet "refs/tags/$current_upstream_tag"; then
     uscan --destdir ../build --dehs --download-current-version > "$export_dir/uscan.log"
     downloaded_tarball=$(sed -n -r '
@@ -175,17 +185,14 @@ if ! git show-ref --verify --quiet "refs/tags/$current_upstream_tag"; then
     s|</?target-path>||g
     p
 }' "$export_dir/uscan.log")
-    gbp import-orig --pristine-tar \
-        --upstream-vcs-tag="$UPSTREAM_VCS_TAG" \
-        --upstream-branch=gbp_upstream \
-        --no-merge --no-interactive "$downloaded_tarball"
+    gbp import-orig $IMPORT_ORIG_ARGS \
+        --upstream-vcs-tag="$UPSTREAM_VCS_TAG" "$downloaded_tarball"
 fi
+# if new upstream release, use gbp import-orig to fetch the new tarball
 if [ -n "$new_upstream_release" ] && \
     ! git show-ref --verify --quiet "refs/tags/$upstream_tag"; then
-    gbp import-orig --uscan --pristine-tar \
-        --upstream-vcs-tag="$UPSTREAM_VCS_TAG" \
-        --upstream-branch=gbp_upstream \
-        --no-merge --no-interactive
+    gbp import-orig $IMPORT_ORIG_ARGS \
+        --upstream-vcs-tag="$UPSTREAM_VCS_TAG" --uscan
 fi
 # Push new upstream tags, if any
 git push --follow-tags
@@ -207,6 +214,10 @@ export UPSTREAM_TAG_TEMPLATE="upstream/{version}"
 hooks_dir='/srv/pkg-kde-jenkins/hooks/prepare'
 if [ -d "${hooks_dir}" ]; then
     run-parts --exit-on-error --verbose "${hooks_dir}"
+fi
+
+if [ -n "$MERGE_UPSTREAM" ]; then
+    git merge --no-edit "refs/tags/$upstream_tag"
 fi
 
 GBP_ARGS="--git-verbose"

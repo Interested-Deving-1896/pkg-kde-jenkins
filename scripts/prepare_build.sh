@@ -127,7 +127,7 @@ fi
 MERGE_UPSTREAM=$(python3 -c '
 import configparser
 c = configparser.ConfigParser()
-c.read("adebian/gbp.conf")
+c.read("debian/gbp.conf")
 print(c.getboolean("import-orig", "merge", fallback=""))
 ')
 export MERGE_UPSTREAM

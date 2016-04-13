@@ -8,7 +8,7 @@ set -e
 cd "$repo_dir"
 
 old_version=$(sed -n 's/^Standards-Version:\s*\(\S*\)/\1/p' debian/control)
-newer=$(sort -rV <(echo "$STANDARDS_VERSION") <(echo "$old_version") | head -n1)
+newer=$( (echo "$STANDARDS_VERSION"; echo "$old_version") | sort -rV | head -n1)
 
 if [ "${newer}" = "${old_version}" ]; then
     # No changes needed

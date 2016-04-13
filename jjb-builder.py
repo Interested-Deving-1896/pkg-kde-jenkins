@@ -233,7 +233,7 @@ class Package(object):
                 branch = None
                 if vcs_type == 'Git':
                     # Handle -b for branch
-                    parts = uri.rsplit('-b', 2)
+                    parts = uri.rsplit(' -b ', 2)
                     if len(parts) == 2:
                         branch = parts[1].strip()
                     uri = parts[0].strip()
@@ -369,6 +369,7 @@ def prepare_projects(group_tree, dependencies, local_repository, local_vcs):
         items = []
         project['item'] = items
         for name, package in group.values.items():
+            print("Processing: {}".format(name))
             item = {}
             items.append({name: item})
             item['description'] = package.short_description

@@ -71,6 +71,25 @@
     debian_vcs: '{debian_vcs}'
     upstream_vcs: '{upstream_vcs}'
 
+- job-group:
+    name: 'extras-{item}'
+    arch:
+        - amd64
+        - i386
+        - armhf
+    jobs:
+        - '{item}_prepare'
+        - '{item}_build'
+        - '{item}_test':
+            dependencies: '{obj:test_dependencies}'
+            arch: amd64
+    dependencies: '{obj:build_dependencies}'
+    reverse_build_dependencies: '{obj:reverse_build_dependencies}'
+    description: '{description}'
+    local_vcs: '{local_vcs}'
+    debian_vcs: '{debian_vcs}'
+    upstream_vcs: '{upstream_vcs}'
+
 - defaults:
     name: global
     quiet-period: 5

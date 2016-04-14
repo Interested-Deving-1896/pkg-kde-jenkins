@@ -122,7 +122,7 @@ def process_entry(dirname, entry):
         universal_newlines=True, stdout=subprocess.PIPE)
     if completed_process.returncode and completed_process.stdout:
         completed_process.check_returncode()
-    output = completed_process.output
+    output = completed_process.stdout
     interesting = get_pkg_file(output)
     result = []
     for package_name in interesting:

@@ -1052,7 +1052,7 @@ class ReqToDebianPkg(object):
         'MobileBroadbandProviderInfo': {name: 'mobile-broadband-provider-info'},
         'ModemManager': {name: 'modemmanager-dev'},
         'Mtp': {name: 'libmtp-dev'},
-        'MusicBrainz3': {name: 'libmusicbrainz3-dev'},
+        'MusicBrainz3': None,  # Dropped in favor of musicbrainz5
         'MusicBrainz5': {name: 'libmusicbrainz5-dev'},
         'Nova': {name: 'libnova-dev'},
         'NepomukCore': None,  # Trying to get rid of it

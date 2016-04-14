@@ -115,9 +115,14 @@ def process_entry(dirname, entry):
     breaks_rels = get_relations(deb_breaks)
     replaces_rels = get_relations(deb_replaces)
 
-    output = subprocess.check_output(
+    # apt-file now returns 1 if the files are not found, specially bothering
+    # with the dbgsym packages (and the packages not yet uploaded)
+    completed_process = subprocess.run(
         ['apt-file', '-D', 'search', deb_filename],
-        universal_newlines=True)
+        universal_newlines=True, stdout=subprocess.PIPE)
+    if completed_process.returncode and completed_process.stdout:
+        completed_process.check_returncode()
+    output = completed_process.output
     interesting = get_pkg_file(output)
     result = []
     for package_name in interesting:

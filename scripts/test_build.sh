@@ -20,7 +20,7 @@ set -e
 run_adt () {
     multi_changes="$export_dir/${source_name}_${epochless_version}_multi.changes"
     adt-run -U "$multi_changes" --output-dir="$export_dir/adt.artifacts" --- lxc -s "adt-$distribution-$arch"
-    adt2junit.py -o "$export_dir/adt.xml" "$export_dir/adt.artifacts/log"
+    /srv/pkg-kde-jenkins/scripts/adt2junit.py -o "$export_dir/adt.xml" "$export_dir/adt.artifacts/log"
 }
 
 if [ -z "$arch" ]; then
@@ -64,7 +64,8 @@ echo "Run Lintian"
 
 (lintian -I --pedantic --show-overrides "$source_changes";
  lintian -I --pedantic --show-overrides "$arch_changes") 2>&1 | \
-   tee "$export_dir/lintian.log" | lintian2junit.py -o "$export_dir/lintian.xml";
+   tee "$export_dir/lintian.log" | \
+   /srv/pkg-kde-jenkins/scripts/lintian2junit.py -o "$export_dir/lintian.xml";
 
 echo "Combine changes file"
 

@@ -78,7 +78,7 @@ prepare_branches () {
     git branch --set-upstream-to=local/pristine-tar
 
     if git show-ref --verify --quiet refs/remotes/debian/upstream; then
-        git merge -B gbp_upstream refs/remotes/debian/upstream
+        git checkout -B gbp_upstream refs/remotes/debian/upstream
         git merge --no-edit refs/remotes/local/gbp_upstream
     else
         git checkout -B gbp_upstream refs/remotes/local/gbp_upstream

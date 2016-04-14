@@ -4,10 +4,9 @@
    * stable (local stable ppa and the stable archive)
 
  * Hooks that need to get written:
-   * Check for file conflicts and Breaks/Replaces
-   * Update Standards Version
+   * Check for file conflicts and Breaks/Replaces, partially done, still needs
+     to check the versions affected.
    * Process private symbols
-   * Update/Refresh patches
 
  * Add git hooks to local repo so that jenkins can trigger rebuilds faster
    (maybe, this can also not be such a good idea)
@@ -16,7 +15,6 @@
 
  * Deal with packages without upstream vcs
 
- * Talk with Holger about running this on the Debian Jenkins instance
+ * Deal with upstreams using svn
 
- * Add the aggregate matrix support for the conditional-publisher (currently
-   using raw)
+ * Talk with Holger about running this on the Debian Jenkins instance

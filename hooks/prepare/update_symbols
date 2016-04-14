@@ -151,6 +151,14 @@ def use_local_logs(options):
             '//a[re:test(.,"^{base_job}_.*_{arch}\\.build$", "i")]'
             '/@href'.format(base_job=base_job, arch=arch),
             namespaces={'re': regexpNS})
+        # If the build failed the build log is a symlink that can't be
+        # accessed this way
+        if not result:
+            result = tree.xpath(
+                '//table[@class="fileList"]'
+                '//a[re:test(.,"^{base_job}_.*_{arch}-.*\\.build$", "i")]'
+                '/@href'.format(base_job=base_job, arch=arch),
+                namespaces={'re': regexpNS})
         if not result:
             continue
 

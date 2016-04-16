@@ -124,6 +124,11 @@
     name: '{item}_prepare'
     description: '{description} -- Prepare'
     node: prepare
+    parameters:
+        - string:
+            name: DISTRIBUTION
+            default: unreleased
+            description: 'Target distribution'
     scm:
         - debian_scm:
             local_vcs: '{local_vcs}'
@@ -153,6 +158,13 @@
     name: '{item}_build'
     # Needs the matrix project plugin
     project-type: matrix
+    # Only affects the lightweight job
+    node: master
+    parameters:
+        - string:
+            name: DISTRIBUTION
+            default: unreleased
+            description: 'Target distribution'
     description: '{description} -- Build'
     block-upstream: true
     execution-strategy:
@@ -196,6 +208,11 @@
     name: '{item}_test'
     description: '{description} -- Test'
     node: lxc_amd64
+    parameters:
+        - string:
+            name: DISTRIBUTION
+            default: unreleased
+            description: 'Target distribution'
     scm: []
     builders:
         - shell: '/srv/pkg-kde-jenkins/scripts/clean_build.sh'

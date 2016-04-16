@@ -129,7 +129,7 @@ cd "$export_dir"
 
 # Fix permissions
 find -maxdepth 1 -type f -exec chmod 0644 '{}' '+'
-changes_file="${SOURCE_NAME}_*_${arch}.changes"
+changes_file="$(ls ${SOURCE_NAME}_*_${arch}.changes)"
 dput -u local "$changes_file"
 
 # Remove build symlink due to a bug in the clone scm plugin

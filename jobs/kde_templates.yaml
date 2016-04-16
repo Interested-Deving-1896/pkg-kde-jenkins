@@ -147,6 +147,7 @@
             threshold: UNSTABLE
         - archive:
             artifacts: 'build/'
+            allow-empty: True
 
 - job-template:
     name: '{item}_build'
@@ -166,21 +167,15 @@
                 - amd64
                 - armhf
                 - i386
-    scm:
-        - debian_scm:
-            local_vcs: '{local_vcs}'
-            debian_vcs: '{debian_vcs}'
-            upstream_vcs: '{upstream_vcs}'
-            branches:
-                - local/master
+    scm: []
     builders:
         - shell: '/srv/pkg-kde-jenkins/scripts/clean_build.sh'
         # Needs the Copy Artifacts plugin
         - copyartifact:
             project: '{item}_prepare'
             filter: 'build/'
-            which-build: last-successful
-            stable: false
+            which-build: upstream-build
+            fallback-to-last-successful: true
         - shell: '/srv/pkg-kde-jenkins/scripts/build_build.sh'
     publishers:
         - trigger:
@@ -201,23 +196,18 @@
     name: '{item}_test'
     description: '{description} -- Test'
     node: lxc_amd64
-    scm:
-        - debian_scm:
-            local_vcs: '{local_vcs}'
-            debian_vcs: '{debian_vcs}'
-            upstream_vcs: '{upstream_vcs}'
-            branches:
-                - local/master
+    scm: []
     builders:
         - shell: '/srv/pkg-kde-jenkins/scripts/clean_build.sh'
         - copyartifact:
             project: '{item}_build/arch=amd64'
             filter: 'build/'
-            which-build: last-successful
-            stable: false
+            which-build: upstream-build
+            fallback-to-last-successful: true
         - shell: '/srv/pkg-kde-jenkins/scripts/test_build.sh'
     publishers:
         - archive:
             artifacts: 'build/'
+            allow-empty: True
         - junit:
             results: 'build/*.xml'

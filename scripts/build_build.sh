@@ -32,6 +32,11 @@ repo_dir="$WORKSPACE/repo"
 export EXPORT_DIR="$export_dir"
 export REPO_DIR="$repo_dir"
 
+if [ -x "$JOB_NAME" ]; then
+    export JOB_NAME="$(basename "$WORKSPACE")"
+fi
+export SOURCE_NAME="${JOB_NAME%_*}"
+
 packages_for_this_arch () {
     arch="$1"
 
@@ -61,20 +66,22 @@ in_arch {
 }
 
 echo "Get the build information"
-cd "$repo_dir"
-source_name=$(dpkg-parsechangelog -S source)
-version=$(dpkg-parsechangelog -S version)
-epochless_version=${version##*:}
+# cd "$repo_dir"
+# source_name=$(dpkg-parsechangelog -S source)
+# version=$(dpkg-parsechangelog -S version)
+# epochless_version=${version##*:}
 
 # Configure an upstream so push does something
-git remote set-branches --add local master
-git branch --set-upstream-to=local/master
+# git remote set-branches --add local master
+# git branch --set-upstream-to=local/master
 
 # TODO: Detect target distribution or use DEP14
-distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
-if [ "$distribution" = "unreleased" ]; then
-    distribution="unstable"
-fi
+# distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
+# if [ "$distribution" = "unreleased" ]; then
+#     distribution="unstable"
+# fi
+
+distribution="unstable"
 
 # TODO: Hide this in a config file
 local_repository='deb [trusted=yes] http://freak.gnuservers.com.ar/~maxy/debian/ '"$distribution"' main'
@@ -96,7 +103,7 @@ fi
 
 echo "Build it"
 cd "$export_dir"
-dsc_file="${source_name}_${epochless_version}.dsc"
+dsc_file="${SOURCE_NAME}_*.dsc"
 chroot="$distribution-$arch-sbuild"
 
 SBUILD_ARGS="--verbose"
@@ -119,7 +126,7 @@ cd "$export_dir"
 
 # Fix permissions
 find -maxdepth 1 -type f -exec chmod 0644 '{}' '+'
-changes_file="${source_name}_${epochless_version}_${arch}.changes"
+changes_file="${SOURCE_NAME}_*_${arch}.changes"
 dput -u local "$changes_file"
 
 # Remove build symlink due to a bug in the clone scm plugin

@@ -39,8 +39,9 @@ export SOURCE_NAME="${JOB_NAME%_*}"
 
 packages_for_this_arch () {
     arch="$1"
+    dsc_file="$2"
 
-    pkg_arches=$(awk '
+    pkg_arches=$(dscextract "$dsc_file" debian/control | awk '
 /^Architecture:/ {
     in_arch=1
     $1=""
@@ -52,7 +53,7 @@ in_arch {
     for (i=1; i <= NF; i++) {
         if ($i) print $i
     }
-}' debian/control | sort -u)
+}' | sort -u)
     for pkg_arch in $pkg_arches; do
         if dpkg-architecture -a"$arch" -i"$pkg_arch"; then
             return 0
@@ -83,12 +84,15 @@ echo "Get the build information"
 
 distribution="unstable"
 
+cd "$export_dir"
+dsc_file="$(ls ${SOURCE_NAME}_*.dsc)"
+
 # TODO: Hide this in a config file
 local_repository='deb [trusted=yes] http://freak.gnuservers.com.ar/~maxy/debian/ '"$distribution"' main'
 
 echo "Check it this package is available in the current arch"
 
-if ! packages_for_this_arch "$arch"; then
+if ! packages_for_this_arch "$arch" "$dsc_file"; then
     # Skip this build
     exit 0
 fi
@@ -103,7 +107,6 @@ fi
 
 echo "Build it"
 cd "$export_dir"
-dsc_file="${SOURCE_NAME}_*.dsc"
 chroot="$distribution-$arch-sbuild"
 
 SBUILD_ARGS="--verbose"

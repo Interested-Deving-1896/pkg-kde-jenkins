@@ -145,14 +145,22 @@
             cron: 'H H/6 * * *'
     builders:
         - shell: '/srv/pkg-kde-jenkins/scripts/clean_build.sh'
+        # Needs the Copy Artifacts plugin
+        - copyartifact:
+            project: '{item}_build'
+            filter: 'build/*.build'
+            which-build: last-completed
+            parameter-filters: 'DISTRIBUTION=${{DISTRIBUTION}}'
+            optional: true
         - shell: '/srv/pkg-kde-jenkins/scripts/prepare_build.sh'
     publishers:
-        - trigger:
-            project: '{item}_build'
-            threshold: UNSTABLE
+        - trigger-parameterized-builds:
+            - project: '{item}_build'
+              current-parameters: true
+              condition: UNSTABLE_OR_BETTER
         - archive:
             artifacts: 'build/'
-            allow-empty: True
+            allow-empty: true
 
 - job-template:
     name: '{item}_build'
@@ -190,12 +198,13 @@
             fallback-to-last-successful: true
         - shell: '/srv/pkg-kde-jenkins/scripts/build_build.sh'
     publishers:
-        - trigger:
-            project: '{item}_test'
-            threshold: UNSTABLE
+        - trigger-parameterized-builds:
+            - project: '{item}_test'
+              current-parameters: true
+              condition: UNSTABLE_OR_BETTER
         - archive:
             artifacts: 'build/'
-            allow-empty: True
+            allow-empty: true
         # Needs the Flexible publisher plugin
         - conditional-publisher:
             - condition-kind: never
@@ -225,6 +234,6 @@
     publishers:
         - archive:
             artifacts: 'build/'
-            allow-empty: True
+            allow-empty: true
         - junit:
             results: 'build/*.xml'

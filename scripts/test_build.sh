@@ -18,7 +18,7 @@
 set -e
 
 run_adt () {
-    multi_changes="$export_dir/${source_name}_${epochless_version}_multi.changes"
+    multi_changes="$(ls "$export_dir/${SOURCE_NAME}"_*_multi.changes)"
     adt-run -U "$multi_changes" --output-dir="$export_dir/adt.artifacts" --- lxc -s "adt-$distribution-$arch"
     /srv/pkg-kde-jenkins/scripts/adt2junit.py -o "$export_dir/adt.xml" "$export_dir/adt.artifacts/log"
 }
@@ -31,33 +31,23 @@ if [ -z "$WORKSPACE" ]; then
     # Just in case we want to run this without jenkins
     export WORKSPACE=$(pwd)
 fi
-repo_dir="$WORKSPACE/repo"
-export REPO_DIR="$repo_dir"
 export_dir="$WORKSPACE/build"
 export EXPORT_DIR="$export_dir"
 
 echo "Get the information"
 
-cd "$repo_dir"
-version=$(dpkg-parsechangelog -S version)
-epochless_version=${version##*:}
-source_name=$(dpkg-parsechangelog -S source)
-source_changes="$export_dir/${source_name}_${epochless_version}_source.changes"
-arch_changes="$export_dir/${source_name}_${epochless_version}_$arch.changes"
+if [ -x "$JOB_NAME" ]; then
+    export JOB_NAME="$(basename "$WORKSPACE")"
+fi
+export SOURCE_NAME="${JOB_NAME%_*}"
+source_changes=$(ls "$export_dir/${SOURCE_NAME}"_*_source.changes)
+arch_changes=$(ls "$export_dir/${SOURCE_NAME}"_*_"$arch".changes)
 export CHANGES_FILE="$arch_changes"
 
 # TODO: Detect target distribution or use DEP14
 distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
 if [ "$distribution" = "unreleased" ]; then
     distribution="unstable"
-fi
-
-echo "Call pre-test hooks"
-
-cd "$WORKSPACE"
-hooks_dir='/srv/pkg-kde-jenkins/hooks/pre-test'
-if [ -d "$hooks_dir" ]; then
-    run-parts --exit-on-error "$hooks_dir"
 fi
 
 echo "Run Lintian"
@@ -76,15 +66,15 @@ mergechanges -f  "$source_changes" "$arch_changes"
 find -maxdepth 1 -type f -exec chmod 0644 '{}' '+'
 
 echo "Run autopkgtests"
-cd "$repo_dir"
-if [ -f debian/tests/control ]; then
+dsc_file="$(ls "${export_dir}/${SOURCE_NAME}"_*.dsc)"
+if dscextract "$dsc_file" debian/tests/control > /dev/null; then
     run_adt
 fi
 
-echo "Call post-test hooks"
+echo "Call test hooks"
 
 cd "$WORKSPACE"
-hooks_dir='/srv/pkg-kde-jenkins/hooks/post-test'
+hooks_dir='/srv/pkg-kde-jenkins/hooks/test'
 if [ -d "$hooks_dir" ]; then
     run-parts --exit-on-error "$hooks_dir"
 fi

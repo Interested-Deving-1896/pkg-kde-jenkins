@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-set -e
+# set -e
 
 run_adt () {
     multi_changes="$(ls "$export_dir/${SOURCE_NAME}"_*_multi.changes)"

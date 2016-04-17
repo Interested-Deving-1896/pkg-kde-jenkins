@@ -33,8 +33,6 @@ else
     TARGET_DISTRIBUTION="$DISTRIBUTION"
 fi
 
-export SOURCE_NAME="${JOB_NAME%_*}"
-
 # Clean up old repository
 rm -rf "${WORKSPACE}/repo"
 
@@ -69,7 +67,7 @@ in_arch {
 
 echo "Get the build information"
 cd "$EXPORT_DIR"
-dsc_file="$(ls ${SOURCE_NAME}_*.dsc)"
+dsc_file="$(ls *_*.dsc)"
 
 # TODO: Hide this in a config file
 local_repository='deb [trusted=yes] http://freak.gnuservers.com.ar/~maxy/debian/ '"$TARGET_DISTRIBUTION"' main'
@@ -118,7 +116,7 @@ cd "$EXPORT_DIR"
 
 # Fix permissions
 find -maxdepth 1 -type f -exec chmod 0644 '{}' '+'
-changes_file="$(ls ${SOURCE_NAME}_*_${arch}.changes)"
+changes_file="$(ls *_*_${arch}.changes)"
 dput -u local "$changes_file"
 
 # Remove build symlink due to a bug in the clone scm plugin

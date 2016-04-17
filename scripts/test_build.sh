@@ -30,20 +30,18 @@ if [ "$DISTRIBUTION" = "unreleased" ]; then
     DISTRIBUTION="unstable"
 fi
 
-export SOURCE_NAME="${JOB_NAME%_*}"
-
 rm -rf "${WORKSPACE}/repo"
 
 run_adt () {
-    multi_changes="$(ls "$EXPORT_DIR/$SOURCE_NAME"_*_multi.changes)"
+    multi_changes="$(ls "$EXPORT_DIR/"*_*_multi.changes)"
     adt-run -U "$multi_changes" --output-dir="$EXPORT_DIR/adt.artifacts" --- lxc -s "adt-$DISTRIBUTION-$arch"
     /srv/pkg-kde-jenkins/scripts/adt2junit.py -o "$EXPORT_DIR/adt.xml" "$EXPORT_DIR/adt.artifacts/log"
 }
 
 echo "Get the information"
 
-source_changes=$(ls "$EXPORT_DIR/$SOURCE_NAME"_*_source.changes)
-arch_changes=$(ls "$EXPORT_DIR/$SOURCE_NAME"_*_"$arch".changes)
+source_changes=$(ls "$EXPORT_DIR/"*_*_source.changes)
+arch_changes=$(ls "$EXPORT_DIR/"*_*_"$arch".changes)
 export CHANGES_FILE="$arch_changes"
 
 echo "Run Lintian"
@@ -62,7 +60,7 @@ mergechanges -f  "$source_changes" "$arch_changes"
 find -maxdepth 1 -type f -exec chmod 0644 '{}' '+'
 
 echo "Run autopkgtests"
-dsc_file="$(ls "$EXPORT_DIR/$SOURCE_NAME"_*.dsc)"
+dsc_file="$(ls "$EXPORT_DIR/"*_*.dsc)"
 if dscextract "$dsc_file" debian/tests/control > /dev/null; then
     run_adt
 fi

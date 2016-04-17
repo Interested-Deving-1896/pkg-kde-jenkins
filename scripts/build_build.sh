@@ -103,7 +103,7 @@ if [ "$DISTRIBUTION" != "unstable" ]; then
     SBUILD_ARGS+=("--extra-repository=$local_repository")
 fi
 
-sbuild "$SBUILD_ARGS[@]" "$dsc_file"
+sbuild "${SBUILD_ARGS[@]}" "$dsc_file"
 
 echo "Call post-build hooks"
 

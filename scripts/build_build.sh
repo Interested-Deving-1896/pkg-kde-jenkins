@@ -16,6 +16,7 @@
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 set -e
+set -x
 
 # Just a default in case I want to run this without jenkins
 : ${arch="amd64"}
@@ -96,10 +97,10 @@ declare -a SBUILD_ARGS
 SBUILD_ARGS=("--dist=$TARGET_DISTRIBUTION" "--arch=$arch" --chroot="$chroot"
              "--verbose")
 if [ "$arch" = "amd64" ]; then
-    SBUILD_ARGS+="--arch-all"
+    SBUILD_ARGS+=("--arch-all")
 fi
 if [ "$DISTRIBUTION" != "unstable" ]; then
-    SBUILD_ARGS+="--extra-repository=$local_repository"
+    SBUILD_ARGS+=("--extra-repository=$local_repository")
 fi
 
 sbuild "$SBUILD_ARGS[@]" "$dsc_file"

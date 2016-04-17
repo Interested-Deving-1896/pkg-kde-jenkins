@@ -18,55 +18,49 @@
 # set -e
 
 run_adt () {
-    multi_changes="$(ls "$export_dir/${SOURCE_NAME}"_*_multi.changes)"
-    adt-run -U "$multi_changes" --output-dir="$export_dir/adt.artifacts" --- lxc -s "adt-$distribution-$arch"
-    /srv/pkg-kde-jenkins/scripts/adt2junit.py -o "$export_dir/adt.xml" "$export_dir/adt.artifacts/log"
+    multi_changes="$(ls "$EXPORT_DIR/$SOURCE_NAME"_*_multi.changes)"
+    adt-run -U "$multi_changes" --output-dir="$EXPORT_DIR/adt.artifacts" --- lxc -s "adt-$DISTRIBUTION-$arch"
+    /srv/pkg-kde-jenkins/scripts/adt2junit.py -o "$EXPORT_DIR/adt.xml" "$EXPORT_DIR/adt.artifacts/log"
 }
 
-if [ -z "$arch" ]; then
-    # Just a default in case I want to run this without jenkins
-    export arch="amd64"
+# Just a default in case I want to run this without jenkins
+: ${arch="amd64"}
+: ${WORKSPACE=$(pwd)}
+: ${DISTRIBUTION="unreleased"}
+: ${JOB_NAME=$(basename "$WORKSPACE")}
+export arch WORKSPACE DISTRIBUTION JOB_NAME
+
+export EXPORT_DIR="$WORKSPACE/build"
+
+if [ "$DISTRIBUTION" = "unreleased" ]; then
+    DISTRIBUTION="unstable"
 fi
-if [ -z "$WORKSPACE" ]; then
-    # Just in case we want to run this without jenkins
-    export WORKSPACE=$(pwd)
-fi
-export_dir="$WORKSPACE/build"
-export EXPORT_DIR="$export_dir"
+
+export SOURCE_NAME="${JOB_NAME%_*}"
 
 echo "Get the information"
 
-if [ -x "$JOB_NAME" ]; then
-    export JOB_NAME="$(basename "$WORKSPACE")"
-fi
-export SOURCE_NAME="${JOB_NAME%_*}"
-source_changes=$(ls "$export_dir/${SOURCE_NAME}"_*_source.changes)
-arch_changes=$(ls "$export_dir/${SOURCE_NAME}"_*_"$arch".changes)
+source_changes=$(ls "$EXPORT_DIR/$SOURCE_NAME"_*_source.changes)
+arch_changes=$(ls "$EXPORT_DIR/$SOURCE_NAME"_*_"$arch".changes)
 export CHANGES_FILE="$arch_changes"
-
-# TODO: Detect target distribution or use DEP14
-distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
-if [ "$distribution" = "unreleased" ]; then
-    distribution="unstable"
-fi
 
 echo "Run Lintian"
 
 (lintian -I --pedantic --show-overrides "$source_changes";
  lintian -I --pedantic --show-overrides "$arch_changes") 2>&1 | \
-   tee "$export_dir/lintian.log" | \
-   /srv/pkg-kde-jenkins/scripts/lintian2junit.py -o "$export_dir/lintian.xml";
+   tee "$EXPORT_DIR/lintian.log" | \
+   /srv/pkg-kde-jenkins/scripts/lintian2junit.py -o "$EXPORT_DIR/lintian.xml";
 
 echo "Combine changes file"
 
-cd "$export_dir"
+cd "$EXPORT_DIR"
 
 mergechanges -f  "$source_changes" "$arch_changes"
 # Fix permissions
 find -maxdepth 1 -type f -exec chmod 0644 '{}' '+'
 
 echo "Run autopkgtests"
-dsc_file="$(ls "${export_dir}/${SOURCE_NAME}"_*.dsc)"
+dsc_file="$(ls "$EXPORT_DIR/$SOURCE_NAME"_*.dsc)"
 if dscextract "$dsc_file" debian/tests/control > /dev/null; then
     run_adt
 fi

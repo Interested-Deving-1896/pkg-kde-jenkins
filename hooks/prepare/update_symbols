@@ -24,9 +24,6 @@ import re
 import subprocess
 import sys
 
-import requests
-from lxml import html
-
 
 def process_options():
     kw = {
@@ -39,12 +36,7 @@ def process_options():
     arg_parser.add_argument('--debug', action='store_true')
     arg_parser.add_argument('--version',
                             default=os.environ.get('VERSION', ''))
-    arg_parser.add_argument('--distribution',
-                            default=os.environ.get('DISTRIBUTION', ''))
-    arg_parser.add_argument('--jenkins-url',
-                            default=os.environ.get('JENKINS_URL', ''))
-    arg_parser.add_argument('--job-name',
-                            default=os.environ.get('JOB_NAME', ''))
+    arg_parser.add_argument('--distribution', default='')
     arg_parser.add_argument('--no-act', action='store_true')
     arg_parser.add_argument('--aux-dir', default='build/update_symbols')
     args = arg_parser.parse_args()
@@ -124,52 +116,12 @@ def call_symbols_helper(package_dir, version, files):
         return None
 
 
-def save_file(response, filename):
-    with open(filename, 'wb') as f:
-        for block in response.iter_content(1024):
-            f.write(block)
-
-
-def use_local_logs(options):
+def use_local_logs():
     print('Local')
 
-    files = []
-    arches = ['amd64', 'i386', 'armhf']
-    base_url = options.jenkins_url
-    job_name = options.job_name
-    base_job, _ = job_name.rsplit('_', 2)
-    for arch in arches:
-        index_url = ('{base_url}/job/{base_job}_build/arch={arch}/lastBuild/'
-                     'artifact/build/'.format(
-                         base_url=base_url, base_job=base_job, arch=arch))
-
-        page = requests.get(index_url)
-        tree = html.fromstring(page.content)
-        regexpNS = 'http://exslt.org/regular-expressions'
-        result = tree.xpath(
-            '//table[@class="fileList"]'
-            '//a[re:test(.,"^{base_job}_.*_{arch}\\.build$", "i")]'
-            '/@href'.format(base_job=base_job, arch=arch),
-            namespaces={'re': regexpNS})
-        # If the build failed the build log is a symlink that can't be
-        # accessed this way
-        if not result:
-            result = tree.xpath(
-                '//table[@class="fileList"]'
-                '//a[re:test(.,"^{base_job}_.*_{arch}-.*\\.build$", "i")]'
-                '/@href'.format(base_job=base_job, arch=arch),
-                namespaces={'re': regexpNS})
-        if not result:
-            continue
-
-        buildlog_url = index_url + result[0]
-        response = requests.get(buildlog_url)
-        filename = '{dir}/{base_job}_{arch}.build'.format(
-            dir=options.aux_dir, base_job=base_job, arch=arch)
-        print(filename)
-        save_file(response, filename)
-        fullname = os.path.abspath(filename)
-        files.append(fullname)
+    files = map(lambda x: os.path.abspath(x),
+                filter(lambda x: not x.endswith('source.build'),
+                       glob.glob('arch=*/build/*.build')))
     return files
 
 
@@ -211,7 +163,7 @@ def main():
     version = get_version(package_dir, options.version)
     if distribution == 'unreleased':
         msg = 'Update symbols files.'
-        logfiles = use_local_logs(options)
+        logfiles = use_local_logs()
     else:
         msg = 'Update symbols files from buildds logs ({version}).'
         logfiles = use_buildds_logs(package_dir, version, distribution, aux_dir)

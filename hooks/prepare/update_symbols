@@ -122,7 +122,7 @@ def use_local_logs():
     files = map(lambda x: os.path.abspath(x),
                 filter(lambda x: not x.endswith('source.build'),
                        glob.glob('arch=*/build/*.build')))
-    return files
+    return list(files)
 
 
 def use_buildds_logs(package_dir, version, distribution, aux_dir):

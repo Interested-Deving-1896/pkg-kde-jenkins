@@ -17,12 +17,6 @@
 
 # set -e
 
-run_adt () {
-    multi_changes="$(ls "$EXPORT_DIR/$SOURCE_NAME"_*_multi.changes)"
-    adt-run -U "$multi_changes" --output-dir="$EXPORT_DIR/adt.artifacts" --- lxc -s "adt-$DISTRIBUTION-$arch"
-    /srv/pkg-kde-jenkins/scripts/adt2junit.py -o "$EXPORT_DIR/adt.xml" "$EXPORT_DIR/adt.artifacts/log"
-}
-
 # Just a default in case I want to run this without jenkins
 : ${arch="amd64"}
 : ${WORKSPACE=$(pwd)}
@@ -37,6 +31,14 @@ if [ "$DISTRIBUTION" = "unreleased" ]; then
 fi
 
 export SOURCE_NAME="${JOB_NAME%_*}"
+
+rm -rf "${WORKSPACE}/repo"
+
+run_adt () {
+    multi_changes="$(ls "$EXPORT_DIR/$SOURCE_NAME"_*_multi.changes)"
+    adt-run -U "$multi_changes" --output-dir="$EXPORT_DIR/adt.artifacts" --- lxc -s "adt-$DISTRIBUTION-$arch"
+    /srv/pkg-kde-jenkins/scripts/adt2junit.py -o "$EXPORT_DIR/adt.xml" "$EXPORT_DIR/adt.artifacts/log"
+}
 
 echo "Get the information"
 

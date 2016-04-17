@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # build_build, the main builder part of the build jobs
 # Copyright © 2016 Maximiliano Curia <maxy@gnuservers.com.ar>
 
@@ -17,25 +17,25 @@
 
 set -e
 
-if [ -z "$arch" ]; then
-    # Just a default in case I want to run this without jenkins
-    export arch="amd64"
-fi
-if [ -z "$WORKSPACE" ]; then
-    # Just in case we want to run this without jenkins
-    export WORKSPACE=$(pwd)
+# Just a default in case I want to run this without jenkins
+: ${arch="amd64"}
+: ${WORKSPACE=$(pwd)}
+: ${DISTRIBUTION="unreleased"}
+: ${JOB_NAME=$(basename "$WORKSPACE")}
+export arch WORKSPACE DISTRIBUTION JOB_NAME
+
+export EXPORT_DIR="$WORKSPACE/build"
+
+if [ "$DISTRIBUTION" = "unreleased" ]; then
+    TARGET_DISTRIBUTION="unstable"
+else
+    TARGET_DISTRIBUTION="$DISTRIBUTION"
 fi
 
-export_dir="$WORKSPACE/build"
-repo_dir="$WORKSPACE/repo"
-
-export EXPORT_DIR="$export_dir"
-export REPO_DIR="$repo_dir"
-
-if [ -x "$JOB_NAME" ]; then
-    export JOB_NAME="$(basename "$WORKSPACE")"
-fi
 export SOURCE_NAME="${JOB_NAME%_*}"
+
+# Clean up old repository
+rm -rf "${WORKSPACE}/repo"
 
 packages_for_this_arch () {
     arch="$1"
@@ -67,28 +67,11 @@ in_arch {
 }
 
 echo "Get the build information"
-# cd "$repo_dir"
-# source_name=$(dpkg-parsechangelog -S source)
-# version=$(dpkg-parsechangelog -S version)
-# epochless_version=${version##*:}
-
-# Configure an upstream so push does something
-# git remote set-branches --add local master
-# git branch --set-upstream-to=local/master
-
-# TODO: Detect target distribution or use DEP14
-# distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
-# if [ "$distribution" = "unreleased" ]; then
-#     distribution="unstable"
-# fi
-
-distribution="unstable"
-
-cd "$export_dir"
+cd "$EXPORT_DIR"
 dsc_file="$(ls ${SOURCE_NAME}_*.dsc)"
 
 # TODO: Hide this in a config file
-local_repository='deb [trusted=yes] http://freak.gnuservers.com.ar/~maxy/debian/ '"$distribution"' main'
+local_repository='deb [trusted=yes] http://freak.gnuservers.com.ar/~maxy/debian/ '"$TARGET_DISTRIBUTION"' main'
 
 echo "Check it this package is available in the current arch"
 
@@ -106,15 +89,20 @@ if [ -d "$hooks_dir" ]; then
 fi
 
 echo "Build it"
-cd "$export_dir"
-chroot="$distribution-$arch-sbuild"
+cd "$EXPORT_DIR"
+chroot="$TARGET_DISTRIBUTION-$arch-sbuild"
 
-SBUILD_ARGS="--verbose"
+declare -a SBUILD_ARGS
+SBUILD_ARGS=("--dist=$TARGET_DISTRIBUTION" "--arch=$arch" --chroot="$chroot"
+             "--verbose")
 if [ "$arch" = "amd64" ]; then
-    SBUILD_ARGS="$SBUILD_ARGS --arch-all"
+    SBUILD_ARGS+="--arch-all"
 fi
-sbuild --dist="$distribution" --arch="$arch" --chroot="$chroot" $SBUILD_ARGS \
-    --extra-repository="$local_repository" "$dsc_file"
+if [ "$DISTRIBUTION" != "unstable" ]; then
+    SBUILD_ARGS+="--extra-repository=$local_repository"
+fi
+
+sbuild "$SBUILD_ARGS[@]" "$dsc_file"
 
 echo "Call post-build hooks"
 
@@ -125,7 +113,7 @@ if [ -d "$hooks_dir" ]; then
 fi
 
 echo "Local upload"
-cd "$export_dir"
+cd "$EXPORT_DIR"
 
 # Fix permissions
 find -maxdepth 1 -type f -exec chmod 0644 '{}' '+'

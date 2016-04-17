@@ -168,7 +168,7 @@ def main():
             name, result, output = process_entry(dirname, entry)
             results[name] = (result, output)
     test_cases = generate_test_cases(results)
-    test_suite = TestSuite('Autopkgtest', test_cases)
+    test_suite = TestSuite('check_for_missing_breaks_replaces', test_cases)
     with open(args.output, 'w') as output_file:
         output_file.write(TestSuite.to_xml_string([test_suite]))
 

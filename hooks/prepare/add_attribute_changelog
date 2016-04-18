@@ -1,0 +1,11 @@
+#!/bin/bash
+
+: ${WORKSPACE=$(pwd)}
+: ${REPO_DIR="$WORKSPACE/repo}
+
+cd "$REPO_DIR"
+if [ ! -f debian/.gitattributes ]; then
+    echo "changelog merge=dpkg-mergechangelogs" > debian/.gitattributes
+    git add debian/.gitattributes
+    git commit -m 'Add a .gitattributes file to use dpkg-mergechangelogs'
+fi

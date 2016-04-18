@@ -1,11 +1,11 @@
 #!/bin/bash
 
 : ${STANDARDS_VERSION="3.9.8"}
-: ${repo_dir="$(pwd)/repo"}
+: ${REPO_DIR="$(pwd)/repo"}
 
 set -e
 
-cd "$repo_dir"
+cd "$REPO_DIR"
 
 old_version=$(sed -n 's/^Standards-Version:\s*\(\S*\)/\1/p' debian/control)
 newer=$( (echo "$STANDARDS_VERSION"; echo "$old_version") | sort -rV | head -n1)

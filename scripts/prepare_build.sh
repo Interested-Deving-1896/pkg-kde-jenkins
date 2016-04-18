@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # prepare_build, the main builder of the prepare jobs
 # Copyright © 2016 Maximiliano Curia <maxy@gnuservers.com.ar>
 
@@ -18,10 +18,16 @@
 set -x
 set -e
 
-# TODO: The upstream tag format should be configurable
-# + Add it to the environment vars in the job
-if [ -z "$UPSTREAM_VCS_TAG" ]; then
-    UPSTREAM_VCS_TAG='v%(version)s'
+: ${WORKSPACE=$(pwd)}
+: ${EXPORT_DIR="$WORKSPACE/build"}
+: ${REPO_DIR="$WORKSPACE/repo"}
+: ${UPSTREAM_DIR="$WORKSPACE/upstream"}
+: ${DISTRIBUTION="unreleased"}
+export WORKSPACE EXPORT_DIR REPO_DIR UPSTREAM_DIR DISTRIBUTION
+
+target_distribution="$DISTRIBUTION"
+if [ "$DISTRIBUTION" = "unreleased" ]; then
+    target_distribution="unstable"
 fi
 
 expand_tag () {
@@ -102,37 +108,21 @@ prepare_branches () {
     git checkout master
 }
 
-export_dir="$(pwd)/build"
-repo_dir="$(pwd)/repo"
-upstream_dir="$(pwd)/upstream"
-if [ -z "$WORKSPACE" ]; then
-    # Just in case we want to run this without jenkins
-    WORKSPACE=$(pwd)
-fi
-
-cd "$repo_dir"
+cd "$REPO_DIR"
 
 prepare_branches
 
-if ! [ -d "$export_dir" ]; then
-    mkdir "$export_dir"
+if ! [ -d "$EXPORT_DIR" ]; then
+    mkdir "$EXPORT_DIR"
 fi
 
-echo "Add a snapshot changelog entry"
-source_name=$(dpkg-parsechangelog -S source)
-# TODO: Detect native packages and skip the upstream dance
-version=$(dpkg-parsechangelog -S version)
-epochless_version=${version##*:}
-upstream_version=${epochless_version%%-*}
-# TODO: What about dfsg changes
-upstream_vcs_tag=$(expand_tag "$(version_to_tag "$upstream_version")")
-upstream_tag="upstream/$(version_to_tag "$upstream_version")"
-current_upstream_tag="$upstream_tag"
-# TODO: Detect target distribution or use DEP14
-distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
-if [ "$distribution" = "unreleased" ]; then
-    distribution="unstable"
-fi
+UPSTREAM_VCS_TAG=$(python3 -c '
+import configparser
+c = configparser.ConfigParser()
+c.read("debian/gbp.conf")
+print(c.get("import-orig", "upstream-vcs-tag", fallback="v%(version)s"))
+')
+export UPSTREAM_VCS_TAG
 
 MERGE_UPSTREAM=$(python3 -c '
 import configparser
@@ -142,9 +132,23 @@ print(c.getboolean("import-orig", "merge", fallback=""))
 ')
 export MERGE_UPSTREAM
 
+source_name=$(dpkg-parsechangelog -S source)
+# TODO: Detect native packages and skip the upstream dance
+version=$(dpkg-parsechangelog -S version)
+epochless_version=${version##*:}
+upstream_version=${epochless_version%%-*}
+# TODO: What about dfsg changes
+upstream_vcs_tag=$(expand_tag "$(version_to_tag "$upstream_version")")
+upstream_tag="upstream/$(version_to_tag "$upstream_version")"
+current_upstream_tag="$upstream_tag"
+
 DCH="gbp dch"
-DCH_ARGS="--verbose --snapshot --commit --multimaint-merge"
-DCH_ARGS="$DCH_ARGS --upstream-branch=gbp_upstream"
+declare -a DCH_ARGS
+DCH_ARGS=("--verbose" "--commit" "--multimaint-merge"
+          "--upstream-branch=gbp_upstream")
+if [ "$DISTRIBUTION" = "unreleased" ]; then
+    DCH_ARGS+=("--snapshot")
+fi
 
 if [ "kgamma5" = "${JOB_NAME%_*}" ]; then
     versions="[5-9]*"
@@ -169,7 +173,7 @@ if [ -n "$release_tag" ]; then
             new_version="${version%%:*}:$new_version"
         fi
         # TODO: This also needs to take into account dsfg versions
-        DCH_ARGS="$DCH_ARGS --new-version=$new_version"
+        DCH_ARGS+=("--new-version=$new_version")
 
         upstream_vcs_tag="$release_tag"
         new_upstream_version="$(tag_to_version "$release_tag")"
@@ -190,12 +194,12 @@ IMPORT_ORIG_ARGS="$IMPORT_ORIG_ARGS --no-interactive --no-merge"
 
 # check it the upstream_tag is present and use uscan if not.
 if ! git show-ref --verify --quiet "refs/tags/$current_upstream_tag"; then
-    uscan --destdir ../build --dehs --download-current-version > "$export_dir/uscan.log"
+    uscan --destdir ../build --dehs --download-current-version > "$EXPORT_DIR/uscan.log"
     downloaded_tarball=$(sed -n -r '
 /<target-path>/ {
     s|</?target-path>||g
     p
-}' "$export_dir/uscan.log")
+}' "$EXPORT_DIR/uscan.log")
     gbp import-orig $IMPORT_ORIG_ARGS \
         --upstream-vcs-tag="$UPSTREAM_VCS_TAG" "$downloaded_tarball"
 fi
@@ -210,35 +214,40 @@ git push --follow-tags
 
 echo "Prepare upstream worktree"
 
-if [ -d "${upstream_dir}" ]; then
-    rm -rf "${upstream_dir}"
+if [ -d "$UPSTREAM_DIR" ]; then
+    rm -rf "$UPSTREAM_DIR"
     git worktree prune
 fi
-git worktree add "$upstream_dir" "$upstream_tag"
+git worktree add "$UPSTREAM_DIR" "$upstream_tag"
 
 echo "Call prepare hooks"
 
 cd "$WORKSPACE"
-export UPSTREAM_TAG="${upstream_tag}"
+export UPSTREAM_TAG="$upstream_tag"
 export UPSTREAM_TAG_TEMPLATE="upstream/{version}"
 
 hooks_dir='/srv/pkg-kde-jenkins/hooks/prepare'
-if [ -d "${hooks_dir}" ]; then
-    run-parts --exit-on-error --verbose "${hooks_dir}"
+if [ -d "$hooks_dir" ]; then
+    run-parts --exit-on-error --verbose "$hooks_dir"
 fi
 
-GBP_ARGS="--git-verbose"
+declare -a GBP_ARGS
+GBP_ARGS=("--git-verbose" "--git-export-dir=$EXPORT_DIR"
+          "--git-dist=$target_distribution" "--git-overlay"
+          "--git-no-sign-tags")
 
-cd "${repo_dir}"
+cd "$REPO_DIR"
+changes=""
 if [ -n "$new_upstream_release" ] || \
     [ "$(git rev-list --left-right --count HEAD...$debian_tag)" != "0	0" ];
 then
+    changes='true'
     echo "Add a new changelog entry"
-    ${DCH} ${DCH_ARGS}
-    GBP_ARGS="$GBP_ARGS --git-tag"
+    ${DCH} "${DCH_ARGS[@]}"
+
+    GBP_ARGS+=("--git-tag")
 fi
 
-cd "${repo_dir}"
 if [ -n "$MERGE_UPSTREAM" ]; then
     git merge --no-edit "refs/tags/$upstream_tag"
 fi
@@ -247,13 +256,8 @@ fi
 git push --follow-tags
 
 echo "Prepare source package"
-cd "${repo_dir}"
-# FIXME: Force changes distribution to unstable, probably a job parameter
-distribution="unstable"
-gbp buildpackage \
-    --git-export-dir="${export_dir}" --git-dist="${distribution}" \
-    --git-overlay --git-no-sign-tags ${GBP_ARGS} \
-    -S -us -uc --changes-option="-DDistribution=${distribution}"
+gbp buildpackage "${GBP_ARGS[@]}" \
+    -S -us -uc --changes-option="-DDistribution=$target_distribution"
 
 # Push
 git push --follow-tags
@@ -261,9 +265,15 @@ git push --follow-tags
 # Upload source package locally
 version=$(dpkg-parsechangelog -S version)
 epochless_version=${version##*:}
-cd "${export_dir}"
+cd "$EXPORT_DIR"
 # Fix permissions, else dput tries to do it remotely, which fails if the file
 # is already processed
 find -maxdepth 1 -type f -exec chmod 0644 '{}' '+'
-# dput -u local "${source_name}_${epochless_version}_source.changes"
-dupload -t local --nomail "${source_name}_${epochless_version}_source.changes"
+
+# Avoid triggering the build if there are no changes pending
+if [ -n "$changes" ]; then
+    # dput -u local "${source_name}_${epochless_version}_source.changes"
+    dupload -t local --nomail "${source_name}_${epochless_version}_source.changes"
+
+    touch "$EXPORT_DIR/trigger_build"
+fi

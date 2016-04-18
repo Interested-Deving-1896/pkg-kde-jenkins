@@ -154,10 +154,14 @@
             optional: true
         - shell: '/srv/pkg-kde-jenkins/scripts/prepare_build.sh'
     publishers:
-        - trigger-parameterized-builds:
-            - project: '{item}_build'
-              current-parameters: true
-              condition: UNSTABLE_OR_BETTER
+        - conditional-publisher:
+            - condition-kind: file-exists
+              condition-filename: 'build/trigger_build'
+              action:
+                - trigger-parameterized-builds:
+                    - project: '{item}_build'
+                      current-parameters: true
+                      condition: UNSTABLE_OR_BETTER
         - archive:
             artifacts: 'build/'
             allow-empty: true

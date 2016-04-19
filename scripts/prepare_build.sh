@@ -272,8 +272,10 @@ find -maxdepth 1 -type f -exec chmod 0644 '{}' '+'
 
 # Avoid triggering the build if there are no changes pending
 if [ -n "$changes" ]; then
-    # dput -u local "${source_name}_${epochless_version}_source.changes"
-    dupload -t local --nomail "${source_name}_${epochless_version}_source.changes"
+    if [ "$DISTRIBUTION" != "unstable" ]; then
+        # dput -u local "${source_name}_${epochless_version}_source.changes"
+        dupload -t local --nomail "${source_name}_${epochless_version}_source.changes"
+    fi
 
     touch "$EXPORT_DIR/trigger_build"
 fi

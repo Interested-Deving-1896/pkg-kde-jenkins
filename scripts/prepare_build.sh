@@ -54,7 +54,7 @@ prepare_branches () {
     fi
     if [ "$DISTRIBUTION" != 'unreleased' ]; then
         if ! git show-ref --verify --quiet refs/remotes/local/"$DISTRIBUTION"; then
-            git push --set-upstream local "$DISTRIBUTION"
+            git push --set-upstream local master:"$DISTRIBUTION"
         fi
     fi
     if ! git show-ref --verify --quiet refs/remotes/local/pristine-tar; then

@@ -148,6 +148,8 @@ DCH_ARGS=("--verbose" "--commit" "--multimaint-merge"
           "--upstream-branch=gbp_upstream")
 if [ "$DISTRIBUTION" = "unreleased" ]; then
     DCH_ARGS+=("--snapshot")
+else
+    DCH_ARGS+=("--release" "--distribution=$DISTRIBUTION")
 fi
 
 if [ "kgamma5" = "${JOB_NAME%_*}" ]; then

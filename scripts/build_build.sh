@@ -99,6 +99,8 @@ if [ "$arch" = "amd64" ]; then
 fi
 if [ "$DISTRIBUTION" != "unstable" ]; then
     SBUILD_ARGS+=("--extra-repository=$local_repository")
+else
+    SBUILD_ARGS+=("--extra-repository=deb http://incoming.debian.org/debian-buildd buildd-unstable main")
 fi
 
 sbuild "${SBUILD_ARGS[@]}" "$dsc_file"

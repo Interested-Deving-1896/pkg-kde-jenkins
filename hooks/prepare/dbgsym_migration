@@ -9,7 +9,7 @@ import sys
 import debian.changelog as changelog
 import debian.deb822 as deb822
 
-repo_dir = os.abspath(os.environ.get('REPO_DIR', 'repo'))
+repo_dir = os.path.abspath(os.environ.get('REPO_DIR', 'repo'))
 
 out = subprocess.check_output(['dh_listpackages'], cwd=repo_dir, universal_newlines=True)
 

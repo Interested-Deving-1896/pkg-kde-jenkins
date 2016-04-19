@@ -187,11 +187,7 @@ DCH="gbp dch"
 declare -a DCH_ARGS
 DCH_ARGS=("--verbose" "--commit" "--multimaint-merge"
           "--upstream-branch=gbp_upstream")
-if [ "$DISTRIBUTION" = "unreleased" ]; then
-    DCH_ARGS+=("--snapshot")
-else
-    DCH_ARGS+=("--release" "--distribution=$DISTRIBUTION")
-fi
+DCH_ARGS+=("--snapshot")
 
 if [ "kgamma5" = "${JOB_NAME%_*}" ]; then
     versions="[5-9]*"

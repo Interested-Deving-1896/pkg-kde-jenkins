@@ -173,6 +173,7 @@ print(c.getboolean("import-orig", "merge", fallback=""))
 export MERGE_UPSTREAM
 
 source_name=$(dpkg-parsechangelog -S source)
+current_distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
 # TODO: Detect native packages and skip the upstream dance
 version=$(dpkg-parsechangelog -S version)
 epochless_version=${version##*:}
@@ -207,7 +208,8 @@ release_tag=$(git tag --sort='version:refname' -l "$(expand_tag "$versions")" | 
     p
 }' | tail -1)
 
-if [ -n "$release_tag" ]; then
+# Only process new upstream releases in the unreleased jobs
+if [ "$DISTRIBUTION" = "unreleased" ] && [ -n "$release_tag" ]; then
     if ! git diff --quiet "$upstream_vcs_tag" "$release_tag"; then
         new_upstream_release="$(tag_to_version $release_tag)"
         new_version="$new_upstream_release-1"
@@ -281,6 +283,7 @@ GBP_ARGS=("--git-verbose" "--git-export-dir=$EXPORT_DIR"
 cd "$REPO_DIR"
 changes=""
 if [ -n "$new_upstream_release" ] || \
+    [ "$DISTRIBUTION" != "$current_distribution" ] || \
     [ "$(git rev-list --left-right --count HEAD...$debian_tag)" != "0	0" ];
 then
     changes='true'

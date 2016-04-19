@@ -52,6 +52,11 @@ prepare_branches () {
     if ! git show-ref --verify --quiet refs/remotes/local/master; then
         git push --set-upstream local master
     fi
+    if [ "$DISTRIBUTION" != 'unreleased' ]; then
+        if ! git show-ref --verify --quiet refs/remotes/local/"$DISTRIBUTION"; then
+            git push --set-upstream local "$DISTRIBUTION"
+        fi
+    fi
     if ! git show-ref --verify --quiet refs/remotes/local/pristine-tar; then
         git checkout --orphan pristine-tar
         git rm --ignore-unmatch -rf .
@@ -64,15 +69,51 @@ prepare_branches () {
         git commit --allow-empty -m 'upstream branch'
         git push --set-upstream local gbp_upstream
     fi
-    git remote set-branches --add local master
+    git remote set-branches local master
+    if [ "$DISTRIBUTION" != "unreleased" ]; then
+        git remote set-branches --add local "$DISTRIBUTION"
+    fi
     git remote set-branches --add local pristine-tar
     git remote set-branches --add local gbp_upstream
     git fetch --all
 
     echo "Merge debian and local"
-    git checkout -B master refs/remotes/debian/master
-    git merge --no-edit refs/remotes/local/master
-    git branch --set-upstream-to=local/master
+    case "$DISTRIBUTION" in
+        unreleased)
+            git checkout -B master refs/remotes/debian/master
+            if git show-ref --verify --quiet refs/remotes/debian/unstable; then
+                git merge --no-edit refs/remotes/debian/unstable
+            fi
+            if git show-ref --verify --quiet refs/remotes/local/unstable; then
+                git merge --no-edit refs/remotes/local/unstable
+            fi
+            git merge --no-edit refs/remotes/local/master
+            git branch --set-upstream-to=local/master
+            ;;
+        unstable)
+            if git show-ref --verify --quiet refs/remotes/debian/unstable; then
+                git checkout -B master refs/remotes/debian/unstable
+            else
+                git checkout -B master refs/remotes/debian/master
+            fi
+            git merge --no-edit refs/remotes/local/master
+            git merge --no-edit refs/remotes/local/unstable
+            git branch --set-upstream-to=local/unstable
+            ;;
+        *)
+            if git show-ref --verify --quiet refs/remotes/debian/"$DISTRIBUTION"; then
+                git checkout -B master refs/remotes/debian/"$DISTRIBUTION"
+            else
+                git checkout -B master refs/remotes/debian/master
+            fi
+            if git show-ref --verify --quiet refs/remotes/local/unstable; then
+                git merge --no-edit refs/remotes/local/unstable
+            fi
+            git merge --no-edit refs/remotes/local/master
+            git merge --no-edit refs/remotes/local/"$DISTRIBUTION"
+            git branch --set-upstream-to=local/"$DISTRIBUTION"
+            ;;
+    esac
 
     echo "Update pristine-tar and upstream"
     if git show-ref --verify --quiet refs/remotes/debian/pristine-tar; then
@@ -92,18 +133,17 @@ prepare_branches () {
     git branch --set-upstream-to=local/gbp_upstream
 
     echo "Config remote"
-    if ! git config --get-all remote.local.push | grep -q 'refs/heads/master';
-    then
+    if git config --get-all remote.local.push | grep -q 'refs/heads'; then
+        git config --unset-all remote.local.push
+    fi
+    if [ "$DISTRIBUTION" = "unreleased" ]; then
         git config --add remote.local.push refs/heads/master
+    else
+        git config --add remote.local.push refs/heads/master:refs/heads/"$DISTRIBUTION"
     fi
-    if ! git config --get-all remote.local.push | grep -q 'refs/heads/pristine-tar';
-    then
-        git config --add remote.local.push refs/heads/pristine-tar
-    fi
-    if ! git config --get-all remote.local.push | grep -q 'refs/heads/gbp_upstream';
-    then
-        git config --add remote.local.push refs/heads/gbp_upstream
-    fi
+    git config --add remote.local.push refs/heads/pristine-tar
+    git config --add remote.local.push refs/heads/gbp_upstream
+
     echo "Back to master branch"
     git checkout master
 }

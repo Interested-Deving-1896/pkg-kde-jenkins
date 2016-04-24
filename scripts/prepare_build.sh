@@ -81,13 +81,13 @@ prepare_branches () {
     case "$DISTRIBUTION" in
         unreleased)
             git checkout -B master refs/remotes/debian/master
+            git merge --no-edit refs/remotes/local/master
             if git show-ref --verify --quiet refs/remotes/debian/unstable; then
                 git merge --no-edit refs/remotes/debian/unstable
             fi
             if git show-ref --verify --quiet refs/remotes/local/unstable; then
                 git merge --no-edit refs/remotes/local/unstable
             fi
-            git merge --no-edit refs/remotes/local/master
             git branch --set-upstream-to=local/master
             ;;
         unstable)
@@ -106,11 +106,11 @@ prepare_branches () {
             else
                 git checkout -B master refs/remotes/debian/master
             fi
+            git merge --no-edit refs/remotes/local/master
+            git merge --no-edit refs/remotes/local/"$DISTRIBUTION"
             if git show-ref --verify --quiet refs/remotes/local/unstable; then
                 git merge --no-edit refs/remotes/local/unstable
             fi
-            git merge --no-edit refs/remotes/local/master
-            git merge --no-edit refs/remotes/local/"$DISTRIBUTION"
             git branch --set-upstream-to=local/"$DISTRIBUTION"
             ;;
     esac

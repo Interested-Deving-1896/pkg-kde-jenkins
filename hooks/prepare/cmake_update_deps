@@ -953,6 +953,7 @@ class ReqToDebianPkg(object):
         'KF5KontactInterface': {name: 'libkf5kontactinterface-dev'},
         'KF5Kross': {name: 'kross-dev'},
         'KF5Ldap': {name: 'libkf5ldap-dev'},
+        'KF5Libkdepim': {name: 'libkf5libkdepim-dev'},
         'KF5MailTransport': {name: 'libkf5mailtransport-dev'},
         'KF5Mbox': {name: 'libkf5mbox-dev'},
         'KF5Mime': {name: 'libkf5mime-dev'},

@@ -69,7 +69,11 @@ prepare_branches () {
         git commit --allow-empty -m 'upstream branch'
         git push --set-upstream local gbp_upstream
     fi
-    git remote set-branches local master
+    # If there is no fetch entry configured for the remote setting it fails,
+    # but adding it does the job.
+    if ! git remote set-branches local master; then
+        git remote set-branches --add local master
+    fi
     if [ "$DISTRIBUTION" != "unreleased" ]; then
         git remote set-branches --add local "$DISTRIBUTION"
     fi

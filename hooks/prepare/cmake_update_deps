@@ -799,7 +799,7 @@ class ReqToDebianPkg(object):
         'Akonadi': {name: 'libakonadi-dev'},
         'Alsa': {name: 'libasound2-dev'},
         'Analitza5': {name: 'libanalitza-dev'},
-        'AppstreamQt': None,  # Not there
+        'AppstreamQt': {name: 'libappstreamqt-dev'},
         'AstrometryNet': {name: 'astrometry.net'},
         'Automoc4': {name: 'automoc'},
         'Avahi': {name: 'libavahi-common-dev'},
@@ -841,7 +841,7 @@ class ReqToDebianPkg(object):
         'Exiv2': {name: 'libexiv2-dev'},
         'Expat': {name: 'libexpat1-dev'},
         'FAM': {name: 'libfam-dev'},
-        'FFmpeg': None,  # libav is a mess
+        'FFmpeg': {name: 'libavdevice-dev'},  # avdevice depends on all the ffmpeg parts
         'FFmpegAVCODEC': {name: 'libavcodec-dev'},
         'FFmpegAVFORMAT': {name: 'libavformat-dev'},
         'FFmpegSWSCALE': {name: 'libswscale-dev'},
@@ -945,12 +945,12 @@ class ReqToDebianPkg(object):
         'KF5KDEGames': {name: 'libkf5kdegames-dev'},
         'KF5KDELibs4Support': {name: 'libkf5kdelibs4support-dev'},
         'KF5KDGantt2': {name: 'libkf5kdgantt2-dev'},
-        'KF5KDcraw': None,  # Not there yet {name: 'libkf5kdcraw-dev'},
+        'KF5KDcraw': {name: 'libkf5kdcraw-dev'},
         'KF5KExiv2': {name: 'libkf5exiv2-dev'},
         'KF5KHtml': {name: 'libkf5khtml-dev'},
         'KF5KIO': {name: 'kio-dev'},
         'KF5KMahjongglib': {name: 'libkf5kmahjongglib-dev'},
-        'KF5Kipi': None,   # Not there yet {name: 'libkf5kipi-dev'},
+        'KF5Kipi': {name: 'libkf5kipi-dev'},
         'KF5KontactInterface': {name: 'libkf5kontactinterface-dev'},
         'KF5Kross': {name: 'kross-dev'},
         'KF5Ldap': {name: 'libkf5ldap-dev'},
@@ -1075,7 +1075,7 @@ class ReqToDebianPkg(object):
         'PCRE': {name: 'libpcre3-dev'},
         'PNG': {name: 'libpng12-dev'},
         'PWQuality': {name: 'libpwquality-dev'},
-        'PackageKitQt5': None,  # Not packaged
+        'PackageKitQt5': {name: 'libpolkit-qt5-1-dev'},
         'Perl': {name: 'perl'},
         'Phonon': {name: 'libphonon4qt5-dev'},
         'Phonon4Qt5': {name: 'libphonon4qt5-dev'},
@@ -1107,7 +1107,7 @@ class ReqToDebianPkg(object):
         'Qt5': {name: 'qtbase5-dev'},
         'Qt5Concurrent': {name: 'qtbase5-dev'},
         'Qt5Core': {name: 'qtbase5-dev'},
-        'Qt5DBus': None,  # {name: 'qtbase5-dev'}, Apparently not
+        'Qt5DBus': {name: 'qtbase5-dev'},  # Apparently not
         'Qt5Declarative': {name: 'qtdeclarative5-dev'},
         'Qt5Designer': {name: 'qttools5-dev'},
         'Qt5Gui': {name: 'qtbase5-dev'},
@@ -1225,7 +1225,7 @@ class ReqToDebianPkg(object):
         'libshp': {name: 'libshp-dev'},
         'libwlocate': None,  # Not packaged yet
         'mockcpp': None,  # Not packaged yet
-        'packagekitqt5': None,  # Not packaged
+        'packagekitqt5': {name: 'libpackagekitqt5-dev'},
         'quazip': {name: 'libquazip-qt5-dev'},
         'telepathy-accounts-signon': {name: 'libsignon-qt5-dev'},
     }

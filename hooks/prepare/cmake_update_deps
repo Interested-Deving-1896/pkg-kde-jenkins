@@ -947,6 +947,8 @@ class ReqToDebianPkg(object):
         'KF5KDGantt2': {name: 'libkf5kdgantt2-dev'},
         'KF5KDcraw': {name: 'libkf5kdcraw-dev'},
         'KF5KExiv2': {name: 'libkf5kexiv2-dev'},
+        'KF5PimCommon': {name: 'libkf5pimcommon-dev'},
+        'KF5GrantleeTheme': {name: 'libkf5grantleetheme-dev'},
         'KF5KHtml': {name: 'libkf5khtml-dev'},
         'KF5KIO': {name: 'kio-dev'},
         'KF5KMahjongglib': {name: 'libkf5kmahjongglib-dev'},

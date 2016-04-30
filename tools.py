@@ -22,6 +22,7 @@ def process_options():
     arg_parser.add_argument('-c', '--config', default='jenkins.ini')
     arg_parser.add_argument('--debug', action='store_true')
     arg_parser.add_argument('--distribution', default='unreleased')
+    arg_parser.add_argument('--mode', default='todo', choices=['todo', 'fix'])
     args = arg_parser.parse_args()
 
     if args.debug:
@@ -191,16 +192,11 @@ def version_at_distribution(source_name):
     return version
 
 
-def main():
-    options = process_options()
-    server = connect(options)
-    # test(server)
-    # sys.exit(0)
+def list_todo_distribution(packages):
     # Obtain jobs
     # for each job, obtain the builds
     # check if the build parameter DISTRIBUTION matches the distribution, and
     # keep the information of the newest matching job.
-    packages = get_packages(server)
 
     ready = {}
     for package_name, package in packages.items():
@@ -239,6 +235,40 @@ def main():
     print('\n###\n# BUILD\n###')
     for package in ready['build']:
         print(package)
+
+
+def list_fix(packages):
+
+    for package_name, package in packages.items():
+        try:
+            prepare_version = debian_support.Version(
+                package['unreleased']['prepare']['version'])
+        except Exception:
+            print('{}: no version in prepare, {}'.format(package_name, package))
+            prepare_version = debian_support.Version('0')
+        try:
+            test_version = debian_support.Version(
+                package['unreleased']['test']['version'])
+        except Exception:
+            print('{}: no version in test, {}'.format(package_name, package))
+            test_version = debian_support.Version('0')
+        if prepare_version > test_version:
+            print('{} prepare={} test={}'.format(
+                package_name, prepare_version, test_version))
+
+
+def main():
+    options = process_options()
+    server = connect(options)
+
+    packages = get_packages(server)
+
+    if options.mode == 'todo':
+        list_todo_distribution(packages)
+    elif options.mode == 'fix':
+        list_fix(packages)
+
+    # test(server)
     sys.exit(0)
 
 

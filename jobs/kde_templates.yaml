@@ -29,9 +29,7 @@
     dependencies: '{obj:build_dependencies}'
     reverse_build_dependencies: '{obj:reverse_build_dependencies}'
     description: '{description}'
-    local_vcs: '{local_vcs}'
-    debian_vcs: '{debian_vcs}'
-    upstream_vcs: '{upstream_vcs}'
+    remotes: '{obj:remotes}'
 
 - job-group:
     name: 'plasma-{item}'
@@ -48,9 +46,7 @@
     dependencies: '{obj:build_dependencies}'
     reverse_build_dependencies: '{obj:reverse_build_dependencies}'
     description: '{description}'
-    local_vcs: '{local_vcs}'
-    debian_vcs: '{debian_vcs}'
-    upstream_vcs: '{upstream_vcs}'
+    remotes: '{obj:remotes}'
 
 - job-group:
     name: 'applications-{item}'
@@ -67,9 +63,7 @@
     dependencies: '{obj:build_dependencies}'
     reverse_build_dependencies: '{obj:reverse_build_dependencies}'
     description: '{description}'
-    local_vcs: '{local_vcs}'
-    debian_vcs: '{debian_vcs}'
-    upstream_vcs: '{upstream_vcs}'
+    remotes: '{obj:remotes}'
 
 - job-group:
     name: 'extras-{item}'
@@ -86,9 +80,7 @@
     dependencies: '{obj:build_dependencies}'
     reverse_build_dependencies: '{obj:reverse_build_dependencies}'
     description: '{description}'
-    local_vcs: '{local_vcs}'
-    debian_vcs: '{debian_vcs}'
-    upstream_vcs: '{upstream_vcs}'
+    remotes: '{obj:remotes}'
 
 - defaults:
     name: global
@@ -98,27 +90,6 @@
     retry-count: 3
     logrotate:
         daysToKeep: 7
-
-- scm:
-    name: debian_scm
-    scm:
-        - git:
-            basedir: 'repo'
-            remotes:
-                - local:
-                    url: '{local_vcs}'
-                - debian:
-                    url: '{debian_vcs}'
-                - upstream:
-                    url: '{upstream_vcs}'
-            branches: '{obj:branches}'
-            local-branch: master
-            wipe-workspace: false
-            skip-tag: true
-            prune: true
-            # This should be a configuration parameter, somehow
-            excluded-users:
-                - 'Automatic packaging'
 
 - job-template:
     name: '{item}_prepare'
@@ -130,10 +101,16 @@
             default: unreleased
             description: 'Target distribution'
     scm:
-        - debian_scm:
-            local_vcs: '{local_vcs}'
-            debian_vcs: '{debian_vcs}'
-            upstream_vcs: '{upstream_vcs}'
+        - git:
+            basedir: 'repo'
+            remotes: '{obj:remotes}'
+            local-branch: master
+            wipe-workspace: false
+            skip-tag: true
+            prune: true
+            # This should be a configuration parameter, somehow
+            excluded-users:
+                - 'Automatic packaging'
             branches:
                 - debian/master
                 - local/master

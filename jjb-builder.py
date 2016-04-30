@@ -379,11 +379,17 @@ def prepare_projects(group_tree, dependencies, local_repository, local_vcs):
                 list('{}_build'.format(d) for d in dependencies[name]['reverse_build']))
             item['test_dependencies'] = list(
                 '{}_build'.format(d) for d in dependencies[name]['test'])
+            remotes = []
+            item['remotes'] = remotes
             if local_vcs:
-                item['local_vcs'] = "{}/{}/{}.git".format(
+                local_vcs_uri = "{}/{}/{}.git".format(
                     local_vcs, os.path.join(*group.path), name)
-            item['debian_vcs'] = package.vcs.uri
-            item['upstream_vcs'] = package.upstream_vcs
+                remotes.append({'local': {'url': local_vcs_uri}})
+            debian_vcs = package.vcs.uri
+            remotes.append({'debian': {'url': debian_vcs}})
+            upstream_vcs = package.upstream_vcs
+            if upstream_vcs and not upstream_vcs.startswith('svn'):
+                remotes.append({'upstream': {'url': upstream_vcs}})
     return projects
 
 

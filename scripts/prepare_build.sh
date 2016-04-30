@@ -168,6 +168,14 @@ print(c.get("import-orig", "upstream-vcs-tag", fallback="v%(version)s"))
 ')
 export UPSTREAM_VCS_TAG
 
+declare -a IMPORT_ORIG_ARGS
+# We merge the upstream release (if needed) after calling the hooks
+IMPORT_ORIG_ARGS=("--pristine-tar" "--upstream-branch=gbp_upstream"
+                  "--no-interactive" "--no-merge")
+if git remote | grep -q 'upstream'; then
+    IMPORT_ORIG_ARGS+=("--upstream-vcs-tag=$UPSTREAM_VCS_TAG")
+fi
+
 MERGE_UPSTREAM=$(python3 -c '
 import configparser
 c = configparser.ConfigParser()
@@ -232,10 +240,6 @@ fi
 tag_version=$(echo "$version" | tr ':~' '%_')
 debian_tag="debian/$tag_version"
 
-# We merge the upstream release (if needed) after calling the hooks
-IMPORT_ORIG_ARGS="--pristine-tar --upstream-branch=gbp_upstream"
-IMPORT_ORIG_ARGS="$IMPORT_ORIG_ARGS --no-interactive --no-merge"
-
 # check it the upstream_tag is present and use uscan if not.
 if ! git show-ref --verify --quiet "refs/tags/$current_upstream_tag"; then
     uscan --destdir ../build --dehs --download-current-version > "$EXPORT_DIR/uscan.log"
@@ -244,14 +248,12 @@ if ! git show-ref --verify --quiet "refs/tags/$current_upstream_tag"; then
     s|</?target-path>||g
     p
 }' "$EXPORT_DIR/uscan.log")
-    gbp import-orig $IMPORT_ORIG_ARGS \
-        --upstream-vcs-tag="$UPSTREAM_VCS_TAG" "$downloaded_tarball"
+    gbp import-orig "${IMPORT_ORIG_ARGS[@]}" "$downloaded_tarball"
 fi
 # if new upstream release, use gbp import-orig to fetch the new tarball
 if [ -n "$new_upstream_release" ] && \
     ! git show-ref --verify --quiet "refs/tags/$upstream_tag"; then
-    gbp import-orig $IMPORT_ORIG_ARGS \
-        --upstream-vcs-tag="$UPSTREAM_VCS_TAG" --uscan
+    gbp import-orig "${IMPORT_ORIG_ARGS[@]}" --uscan
 fi
 # Push new upstream tags, if any
 git push --follow-tags

@@ -18,7 +18,7 @@
 
 set -e
 set -x
-set
+
 if [ -z "$WORKSPACE" ]; then
     if [ -d "workspace/$JOB_NAME" ]; then
         cd "workspace/$JOB_NAME"
@@ -37,19 +37,69 @@ cd "${WORKSPACE}/repo"
 # The jenkins plugin won't fetch the tags by default
 git fetch --all --tags
 
+UPSTREAM_VCS_TAG=$(python3 -c '
+import configparser
+c = configparser.ConfigParser()
+c.read("debian/gbp.conf")
+print(c.get("import-orig", "upstream-vcs-tag", fallback="v%(version)s"))
+')
+export UPSTREAM_VCS_TAG
+
 expand_tag () {
-    # TODO: The upstream tag format should be configurable
-    local upstream_tag_format='v%(version)s'
     local version
     if [ $# -lt 1 ]; then
-        echo "${upstream_tag_format}"
+        echo "$UPSTREAM_VCS_TAG"
         return
     fi
     version="$1"
-    python -c "print '${upstream_tag_format}' % {'version': '${version}'}"
+    python -c "print '$UPSTREAM_VCS_TAG' % {'version': '$version'}"
 }
 
 # Check for new upstream releases
+check_upstream_vcs() {
+    # TODO: What about dfsg tags?
+    upstream_tag=$(expand_tag "${upstream_version}")
+
+    if [ "kgamma5" = "${JOB_NAME%_*}" ]; then
+        versions="[5-9]*"
+    else
+        versions="*"
+    fi
+    # ignore the "unstable" (*.*.70 + as well as the rc, alpha and beta tags) releases
+    release_tag=$(git tag --sort='version:refname' -l "$(expand_tag "$versions")" | \
+        sed -n -r '
+    /([789][0-9]+|(rc|alpha|beta)[0-9]*)$/d
+    /^'"${upstream_tag}"'$/,$ {
+        /^'"${upstream_tag}"'$/d
+        p
+    }' | tail -1)
+
+
+    if [ -z "${release_tag}" ]; then
+        # No new release
+        exit 2
+    fi
+
+    if git diff --quiet "${upstream_tag}" "${release_tag}"; then
+        # No changes between releases
+        exit 3
+    fi
+    exit 0
+}
+
+check_uscan() {
+    new_upstream_version=$(uscan --report-status --dehs | sed -n -r '
+/<upstream-version>/ {
+    s|</?upstream-version>||g
+    p
+}')
+
+    if dpkg --compare-versions "$new_upstream_version" gt "$upstream_version";
+    then
+        exit 0
+    fi
+    exit 1
+}
 
 # Detect native packages
 if grep -q 'native' debian/source/format; then
@@ -59,31 +109,12 @@ fi
 version=$(dpkg-parsechangelog -S version)
 epochless_version=${version##*:}
 upstream_version=${epochless_version%%-*}
-# TODO: What about dfsg tags?
-upstream_tag=$(expand_tag "${upstream_version}")
 
-if [ "kgamma5" = "${JOB_NAME%_*}" ]; then
-    versions="[5-9]*"
-else
-    versions="*"
-fi
-# ignore the "unstable" (*.*.70 + as well as the rc, alpha and beta tags) releases
-release_tag=$(git tag --sort='version:refname' -l "$(expand_tag "$versions")" | \
-    sed -n -r '
-/([789][0-9]+|(rc|alpha|beta)[0-9]*)$/d
-/^'"${upstream_tag}"'$/,$ {
-    /^'"${upstream_tag}"'$/d
-    p
-}' | tail -1)
-
-
-if [ -z "${release_tag}" ]; then
-    # No new release
-    exit 2
+if git remote | ! grep -q 'upstream'; then
+    # No upstream remote
+    # TODO: use uscan
+    check_uscan
 fi
 
-if git diff --quiet "${upstream_tag}" "${release_tag}"; then
-    # No changes between releases
-    exit 3
-fi
-exit 0
+check_upstream_vcs
+

@@ -289,12 +289,15 @@ then
     changes='true'
     echo "Add a new changelog entry"
     ${DCH} "${DCH_ARGS[@]}"
-
-    GBP_ARGS+=("--git-tag")
 fi
 
 if [ -n "$MERGE_UPSTREAM" ]; then
     git merge --no-edit "refs/tags/$upstream_tag"
+fi
+
+if [ -n "$changes" ]; then
+    echo "Add the tag so the next call to gbp dch has something to compare with"
+    gbp buildpackage --git-verbose --git-tag-only
 fi
 
 # Push new changelog entry

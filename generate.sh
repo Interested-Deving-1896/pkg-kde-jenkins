@@ -3,11 +3,16 @@
 set -e
 
 delete="false"
+no_act="false"
 
 for i in "$@"; do
     case "$i" in
         --delete|-d)
             delete="true"
+            shift
+            ;;
+        --no-act)
+            no_act="true"
             shift
             ;;
         *)
@@ -31,4 +36,6 @@ python3 jjb-builder.py -o jobs/projects.yaml \
 
 ./test.sh
 
-jenkins-job-builder --conf jjb.ini update -r jobs
+if ! ${no_act}; then
+    jenkins-job-builder --conf jjb.ini update -r jobs
+fi

@@ -97,11 +97,20 @@ SBUILD_ARGS=("--dist=$TARGET_DISTRIBUTION" "--arch=$arch" --chroot="$chroot"
 if [ "$arch" = "amd64" ]; then
     SBUILD_ARGS+=("--arch-all")
 fi
-if [ "$DISTRIBUTION" != "unstable" ]; then
-    SBUILD_ARGS+=("--extra-repository=$local_repository")
-else
-    SBUILD_ARGS+=("--extra-repository=deb http://incoming.debian.org/debian-buildd buildd-unstable main")
-fi
+
+case "$DISTRIBUTION" in
+    unstable)
+        SBUILD_ARGS+=("--extra-repository=deb http://incoming.debian.org/debian-buildd buildd-unstable main")
+        ;;
+    experimental)
+        SBUILD_ARGS+=("--extra-repository=deb http://incoming.debian.org/debian-buildd buildd-experimental main")
+        SBUILD_ARGS+=("--extra-repository=deb http://httpredir.debian.org/debian experimental main")
+        SBUILD_ARGS+=("--build-dep-resolver=aspcud")
+        ;;
+    *)
+        SBUILD_ARGS+=("--extra-repository=$local_repository")
+        ;;
+esac
 
 sbuild "${SBUILD_ARGS[@]}" "$dsc_file"
 

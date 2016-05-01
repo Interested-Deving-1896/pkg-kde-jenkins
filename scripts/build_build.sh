@@ -27,11 +27,14 @@ export arch WORKSPACE DISTRIBUTION JOB_NAME
 
 export EXPORT_DIR="$WORKSPACE/build"
 
-if [ "$DISTRIBUTION" = "unreleased" ]; then
-    TARGET_DISTRIBUTION="unstable"
-else
-    TARGET_DISTRIBUTION="$DISTRIBUTION"
-fi
+case "$DISTRIBUTION" of
+    unreleased|experimental)
+        TARGET_DISTRIBUTION="unstable"
+        ;;
+    *)
+        TARGET_DISTRIBUTION="$DISTRIBUTION"
+        ;;
+esac
 
 # Clean up old repository
 rm -rf "${WORKSPACE}/repo"

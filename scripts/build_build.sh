@@ -27,7 +27,7 @@ export arch WORKSPACE DISTRIBUTION JOB_NAME
 
 export EXPORT_DIR="$WORKSPACE/build"
 
-case "$DISTRIBUTION" of
+case "$DISTRIBUTION" in
     unreleased|experimental)
         TARGET_DISTRIBUTION="unstable"
         ;;

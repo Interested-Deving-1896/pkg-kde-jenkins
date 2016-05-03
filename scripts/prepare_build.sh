@@ -15,9 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
+# TODO: get the new upstream release with uscan if there is no upstream git
+# TODO: build against experimental, do we need to merge experimental into
+# unstable? or into local?
+
 set -x
 set -e
 
+# Set default values for the common variables if not set
 : ${WORKSPACE=$(pwd)}
 : ${EXPORT_DIR="$WORKSPACE/build"}
 : ${REPO_DIR="$WORKSPACE/repo"}
@@ -25,10 +30,15 @@ set -e
 : ${DISTRIBUTION="unreleased"}
 export WORKSPACE EXPORT_DIR REPO_DIR UPSTREAM_DIR DISTRIBUTION
 
+# target_distribution is the distribution against which the package will get
+# built. When DISTRIBUTION is unreleased the source package will get uploaded
+# to the local repository by this script and the local repository will be used
+# for building the package.
 target_distribution="$DISTRIBUTION"
 if [ "$DISTRIBUTION" = "unreleased" ]; then
     target_distribution="unstable"
 fi
+# We should split this to DISTRIBUTION, BRANCH and LOCAL_REPO
 
 expand_tag () {
     local version
@@ -285,7 +295,6 @@ GBP_ARGS=("--git-verbose" "--git-export-dir=$EXPORT_DIR"
 cd "$REPO_DIR"
 changes=""
 if [ -n "$new_upstream_release" ] || \
-    [ "$DISTRIBUTION" != "$current_distribution" ] || \
     [ "$(git rev-list --left-right --count HEAD...$debian_tag)" != "0	0" ];
 then
     changes='true'
@@ -321,7 +330,7 @@ cd "$EXPORT_DIR"
 find -maxdepth 1 -type f -exec chmod 0644 '{}' '+'
 
 # Avoid triggering the build if there are no changes pending
-if [ -n "$changes" ]; then
+if [ "$DISTRIBUTION" != "$current_distribution" ] || [ -n "$changes" ]; then
     if [ "$DISTRIBUTION" != "unstable" ]; then
         # dput -u local "${source_name}_${epochless_version}_source.changes"
         dupload -t local --nomail "${source_name}_${epochless_version}_source.changes"

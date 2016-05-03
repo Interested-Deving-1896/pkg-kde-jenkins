@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # test_build, the main builder part of the test jobs
 # Copyright © 2016 Maximiliano Curia <maxy@gnuservers.com.ar>
 
@@ -32,9 +32,30 @@ fi
 
 rm -rf "${WORKSPACE}/repo"
 
+LXC="adt-$DISTRIBUTION-$arch"
+
+declare -a EXTRA_REPOSITORIES
+EXTRA_REPOSITORIES=("deb [trusted=yes] http://freak.gnuservers.com.ar/~maxy/debian/ $DISTRIBUTION main")
+case "$DISTRIBUTION" in
+    unstable)
+        EXTRA_REPOSITORIES+=("deb http://incoming.debian.org/debian-buildd buildd-unstable main"
+        ;;
+    experimental)
+        EXTRA_REPOSITORIES+=("deb http://incoming.debian.org/debian-buildd buildd-experimental main"
+        EXTRA_REPOSITORIES+=("deb [trusted=yes] http://freak.gnuservers.com.ar/~maxy/debian/ unstable main")
+        LXC="adt-unstable-$arch"
+        ;;
+esac
+
+
 run_adt () {
     multi_changes="$(ls "$EXPORT_DIR/"*_*_multi.changes)"
-    adt-run -U "$multi_changes" --output-dir="$EXPORT_DIR/adt.artifacts" --- lxc -s "adt-$DISTRIBUTION-$arch"
+    declare -a ADT_ARGS
+    ADT_ARGS=("-U" "$multi_changes" "--output-dir=$EXPORT_DIR/adt.artifacts")
+    for repository in "${EXTRA_REPOSITORIES[@]}"; do
+        ADT_ARGS+=("--setup-commands=sed -i '$a\'\"$repository\" /etc/apt/sources.list")
+    done
+    adt-run "${ADT_ARGS[@]}" --- lxc -s "$LXC"
     /srv/pkg-kde-jenkins/scripts/adt2junit.py -o "$EXPORT_DIR/adt.xml" "$EXPORT_DIR/adt.artifacts/log"
 }
 

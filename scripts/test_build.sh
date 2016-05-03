@@ -41,6 +41,7 @@ case "$DISTRIBUTION" in
         ;;
     experimental)
         EXTRA_REPOSITORIES+=("deb [trusted=yes] http://freak.gnuservers.com.ar/~maxy/debian/ $DISTRIBUTION main")
+        EXTRA_REPOSITORIES+=("deb http://httpredir.debian.org/debian experimental main")
         EXTRA_REPOSITORIES+=("deb http://incoming.debian.org/debian-buildd buildd-experimental main")
         LXC="adt-unstable-$arch"
         ;;
@@ -54,6 +55,7 @@ run_adt () {
     for repository in "${EXTRA_REPOSITORIES[@]}"; do
         ADT_ARGS+=("--setup-commands=sed -i '\$a\\$repository' /etc/apt/sources.list")
     done
+    ADT_ARGS+=("--setup-commands=apt-get update")
     adt-run "${ADT_ARGS[@]}" --- lxc -s "$LXC"
     /srv/pkg-kde-jenkins/scripts/adt2junit.py -o "$EXPORT_DIR/adt.xml" "$EXPORT_DIR/adt.artifacts/log"
 }

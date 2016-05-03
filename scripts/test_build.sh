@@ -52,7 +52,7 @@ run_adt () {
     declare -a ADT_ARGS
     ADT_ARGS=("-U" "$multi_changes" "--output-dir=$EXPORT_DIR/adt.artifacts")
     for repository in "${EXTRA_REPOSITORIES[@]}"; do
-        ADT_ARGS+=("--setup-commands=sed -i '\$a\\'\"$repository\" /etc/apt/sources.list")
+        ADT_ARGS+=("--setup-commands=sed -i '\$a\\$repository' /etc/apt/sources.list")
     done
     adt-run "${ADT_ARGS[@]}" --- lxc -s "$LXC"
     /srv/pkg-kde-jenkins/scripts/adt2junit.py -o "$EXPORT_DIR/adt.xml" "$EXPORT_DIR/adt.artifacts/log"

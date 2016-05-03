@@ -35,14 +35,13 @@ rm -rf "${WORKSPACE}/repo"
 LXC="adt-$DISTRIBUTION-$arch"
 
 declare -a EXTRA_REPOSITORIES
-EXTRA_REPOSITORIES=("deb [trusted=yes] http://freak.gnuservers.com.ar/~maxy/debian/ $DISTRIBUTION main")
 case "$DISTRIBUTION" in
     unstable)
         EXTRA_REPOSITORIES+=("deb http://incoming.debian.org/debian-buildd buildd-unstable main")
         ;;
     experimental)
+        EXTRA_REPOSITORIES+=("deb [trusted=yes] http://freak.gnuservers.com.ar/~maxy/debian/ $DISTRIBUTION main")
         EXTRA_REPOSITORIES+=("deb http://incoming.debian.org/debian-buildd buildd-experimental main")
-        EXTRA_REPOSITORIES+=("deb [trusted=yes] http://freak.gnuservers.com.ar/~maxy/debian/ unstable main")
         LXC="adt-unstable-$arch"
         ;;
 esac

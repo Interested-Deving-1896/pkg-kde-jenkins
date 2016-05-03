@@ -21,8 +21,9 @@ def process_options():
         description='List jenkins jobs unders certain criterias')
     arg_parser.add_argument('-c', '--config', default='jenkins.ini')
     arg_parser.add_argument('--debug', action='store_true')
-    arg_parser.add_argument('--distribution', default='unreleased')
+    arg_parser.add_argument('-D', '--distribution', default='unstable')
     arg_parser.add_argument('--mode', default='todo', choices=['todo', 'fix'])
+    arg_parser.add_argument('--trigger', action='store_true')
     args = arg_parser.parse_args()
 
     if args.debug:
@@ -117,14 +118,14 @@ def get_build_infos(server, job_info, distributions):
     return infos
 
 
-def latest_build(server, job):
+def latest_build(server, job, distribution):
     name = job['fullname']
     package, part = name.split('_', 1)
     job_info = server.get_job_info(name)
     result = {}
 
     latest_infos = get_build_infos(server, job_info,
-                                   set(('unreleased', 'unstable')))
+                                   set(('unreleased', distribution)))
     for distribution, info in latest_infos.items():
         result[distribution] = {}
         result[distribution]['status'] = info.get('result', 'FAILURE')
@@ -147,19 +148,19 @@ def status(package):
     return _status('prepare') and _status('build') and _status('test')
 
 
-def check_deps(package, packages):
+def check_deps(package, packages, distribution):
     for dep in package.get('deps', set()):
-        unstable = packages.get(dep, {}).get('unstable', {})
-        if not status(unstable):
+        at_distribution = packages.get(dep, {}).get(distribution, {})
+        if not status(at_distribution):
             return False
     return True
 
 
-def get_packages(server):
+def get_packages(server, distribution):
     packages = {}
     jobs = server.get_jobs()
     for job in jobs:
-        package, part, result, deps = latest_build(server, job)
+        package, part, result, deps = latest_build(server, job, distribution)
         if package not in packages:
             d = {}
             packages[package] = d
@@ -192,19 +193,14 @@ def version_at_distribution(source_name):
     return version
 
 
-def list_todo_distribution(packages):
-    # Obtain jobs
-    # for each job, obtain the builds
-    # check if the build parameter DISTRIBUTION matches the distribution, and
-    # keep the information of the newest matching job.
-
+def get_ready(packages, distribution):
     ready = {}
     for package_name, package in packages.items():
         # print(package_name, package)
-        if not status(package['unreleased']):
+        if 'unreleased' not in package or not status(package['unreleased']):
             continue
         # print(package_name)
-        if not check_deps(package, packages):
+        if not check_deps(package, packages, distribution):
             continue
 
         version = version_at_distribution(package['source_name'])
@@ -212,7 +208,7 @@ def list_todo_distribution(packages):
         epochless.epoch = None
         # print(version, epochless)
 
-        if not status(package.get('unstable', {})):
+        if not status(package.get(distribution, {})):
             new_version = debian_support.Version(
                 package['unreleased']['version'])
             if new_version > epochless:
@@ -222,19 +218,36 @@ def list_todo_distribution(packages):
                     version))
         else:
             new_version = debian_support.Version(
-                package['unstable']['version'])
+                package[distribution]['version'])
             if new_version > epochless:
                 ready.setdefault('upload', set()).add(package_name)
                 print('{} {}={} UPLOAD, currently: {}'.format(
                     package_name, package['source_name'], new_version,
                     version))
+    return ready
+
+
+def list_todo_distribution(server, packages, trigger, distribution):
+    # Obtain jobs
+    # for each job, obtain the builds
+    # check if the build parameter DISTRIBUTION matches the distribution, and
+    # keep the information of the newest matching job.
+    ready = get_ready(packages, distribution)
 
     print('\n###\n# Upload\n###')
-    for package in ready['upload']:
-        print(package)
+    if 'upload' in ready:
+        for package in ready['upload']:
+            print(package)
     print('\n###\n# BUILD\n###')
-    for package in ready['build']:
-        print(package)
+    if 'build' in ready:
+        for package in ready['build']:
+            print(package)
+    if not trigger:
+        return
+    if 'build' in ready:
+        for package in ready['build']:
+            job_name = '{}_prepare'.format(package)
+            server.build_job(job_name, {'DISTRIBUTION': distribution})
 
 
 def list_fix(packages):
@@ -261,10 +274,11 @@ def main():
     options = process_options()
     server = connect(options)
 
-    packages = get_packages(server)
+    packages = get_packages(server, options.distribution)
 
     if options.mode == 'todo':
-        list_todo_distribution(packages)
+        list_todo_distribution(server, packages, options.trigger,
+                               options.distribution)
     elif options.mode == 'fix':
         list_fix(packages)
 

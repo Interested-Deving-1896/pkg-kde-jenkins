@@ -22,7 +22,8 @@ def process_options():
     arg_parser.add_argument('-c', '--config', default='jenkins.ini')
     arg_parser.add_argument('--debug', action='store_true')
     arg_parser.add_argument('-D', '--distribution', default='unstable')
-    arg_parser.add_argument('--mode', default='todo', choices=['todo', 'fix'])
+    arg_parser.add_argument('--mode', default='todo',
+                            choices=['todo', 'fix', 'unreleased'])
     arg_parser.add_argument('--trigger', action='store_true')
     args = arg_parser.parse_args()
 
@@ -177,8 +178,7 @@ def get_packages(server, distribution):
 
 
 def version_at_distribution(source_name):
-    # ftpmasters dak interface responds very sparsely
-    cmd = ['rmadison', '--url=udd', source_name]
+    cmd = ['rmadison', source_name]
     output = subprocess.check_output(cmd, universal_newlines=True)
     version = None
     for line in output.split('\n'):
@@ -270,10 +270,26 @@ def list_fix(packages):
                 package_name, prepare_version, test_version))
 
 
+def list_unreleased(packages):
+
+    def _status(package, part):
+        return package.get(part, {}).get('status', 'MISSING')
+
+    for package_name, package in packages.items():
+        p = package.get('unreleased', {})
+        if status(p):
+            continue
+        print('{}: prepare:{} build:{} test:{}'.format(
+            package_name, _status(p, 'prepare'), _status(p, 'build'),
+            _status(p, 'test')))
+
+
 def main():
     options = process_options()
     server = connect(options)
 
+    if options.mode == 'unreleased':
+        options.distribution = 'unreleased'
     packages = get_packages(server, options.distribution)
 
     if options.mode == 'todo':
@@ -281,6 +297,8 @@ def main():
                                options.distribution)
     elif options.mode == 'fix':
         list_fix(packages)
+    elif options.mode == 'unreleased':
+        list_unreleased(packages)
 
     # test(server)
     sys.exit(0)

@@ -30,15 +30,23 @@ set -e
 : ${DISTRIBUTION="unreleased"}
 export WORKSPACE EXPORT_DIR REPO_DIR UPSTREAM_DIR DISTRIBUTION
 
-# target_distribution is the distribution against which the package will get
-# built. When DISTRIBUTION is unreleased the source package will get uploaded
-# to the local repository by this script and the local repository will be used
-# for building the package.
-target_distribution="$DISTRIBUTION"
-if [ "$DISTRIBUTION" = "unreleased" ]; then
-    target_distribution="unstable"
-fi
-# We should split this to DISTRIBUTION, BRANCH and LOCAL_REPO
+# Split the logic behind the DISTRIBUTION once
+case "$DISTRIBUTION" in
+    unreleased)
+        LOCAL_BRANCH='master'
+        TARGET_DISTRIBUTION='unstable'
+        UPLOAD_HOST='local'
+        FORCE_BUILD=
+        PROCESS_NUR='true'
+        ;;
+    *)
+        LOCAL_BRANCH="$DISTRIBUTION"
+        TARGET_DISTRIBUTION="$DISTRIBUTION"
+        UPLOAD_HOST=
+        FORCE_BUILD='true'
+        PROCESS_NUR=
+        ;;
+esac
 
 expand_tag () {
     local version
@@ -59,75 +67,46 @@ version_to_tag () {
 
 prepare_branches () {
     echo "Check for missing branches"
-    if ! git show-ref --verify --quiet refs/remotes/local/master; then
-        git push --set-upstream local master
-    fi
-    if [ "$DISTRIBUTION" != 'unreleased' ]; then
-        if ! git show-ref --verify --quiet refs/remotes/local/"$DISTRIBUTION"; then
-            git push --set-upstream local master:"$DISTRIBUTION"
+    for branch in master "$LOCAL_BRANCH"; do
+        if ! git show-ref --verify --quiet refs/remotes/local/"$branch"; then
+            git push --set-upstream local master:"$branch"
         fi
-    fi
-    if ! git show-ref --verify --quiet refs/remotes/local/pristine-tar; then
-        git checkout --orphan pristine-tar
-        git rm --ignore-unmatch -rf .
-        git commit --allow-empty -m 'pristine-tar branch'
-        git push --set-upstream local pristine-tar
-    fi
-    if ! git show-ref --verify --quiet refs/remotes/local/gbp_upstream; then
-        git checkout --orphan gbp_upstream
-        git rm --ignore-unmatch -rf .
-        git commit --allow-empty -m 'upstream branch'
-        git push --set-upstream local gbp_upstream
-    fi
+    done
+    for branch in pristine-tar gbp_upstream; do
+        if ! git show-ref --verify --quiet refs/remotes/local/"$branch"; then
+            git checkout --orphan "$branch"
+            git rm --ignore-unmatch -rf .
+            git commit --allow-empty -m "$branch branch"
+            git push --set-upstream local "$branch"
+        fi
+    done
     # If there is no fetch entry configured for the remote setting it fails,
     # but adding it does the job.
     if ! git remote set-branches local master; then
         git remote set-branches --add local master
     fi
-    if [ "$DISTRIBUTION" != "unreleased" ]; then
-        git remote set-branches --add local "$DISTRIBUTION"
-    fi
-    git remote set-branches --add local pristine-tar
-    git remote set-branches --add local gbp_upstream
+    for branch in "$LOCAL_BRANCH" pristine-tar gbp_upstream; do
+        if [ "$branch" != "master" ]; then
+            git remote set-branches --add local "$branch"
+        fi
+    done
     git fetch --all
 
     echo "Merge debian and local"
-    case "$DISTRIBUTION" in
-        unreleased)
-            git checkout -B master refs/remotes/debian/master
-            git merge --no-edit refs/remotes/local/master
-            if git show-ref --verify --quiet refs/remotes/debian/unstable; then
-                git merge --no-edit refs/remotes/debian/unstable
-            fi
-            if git show-ref --verify --quiet refs/remotes/local/unstable; then
-                git merge --no-edit refs/remotes/local/unstable
-            fi
-            git branch --set-upstream-to=local/master
-            ;;
-        unstable)
-            if git show-ref --verify --quiet refs/remotes/debian/unstable; then
-                git checkout -B master refs/remotes/debian/unstable
-            else
-                git checkout -B master refs/remotes/debian/master
-            fi
-            git merge --no-edit refs/remotes/local/master
-            git merge --no-edit refs/remotes/local/unstable
-            git branch --set-upstream-to=local/unstable
-            ;;
-        *)
-            if git show-ref --verify --quiet refs/remotes/debian/"$DISTRIBUTION"; then
-                git checkout -B master refs/remotes/debian/"$DISTRIBUTION"
-            else
-                git checkout -B master refs/remotes/debian/master
-            fi
-            git merge --no-edit refs/remotes/local/master
-            git merge --no-edit refs/remotes/local/"$DISTRIBUTION"
-            if git show-ref --verify --quiet refs/remotes/local/unstable; then
-                git merge --no-edit refs/remotes/local/unstable
-            fi
-            git branch --set-upstream-to=local/"$DISTRIBUTION"
-            ;;
-    esac
+    if gif show-ref --verify --quiet refs/remotes/debian/"$LOCAL_BRANCH"; then
+        git checkout -B master refs/remotes/debian/"$LOCAL_BRANCH"
+    else
+        git checkout -B master refs/remotes/debian/master
+    fi
+    git merge --no-edit refs/remotes/local/master
+    for ref in refs/remotes/local/"$LOCAL_BRANCH"
+               refs/remotes/debian/unstable
+               refs/remotes/local/unstable; do
+        if git show-ref --verify --quiet "$ref"; then
+            git merge --no-edit "$ref"
+        fi
+    done
+    git branch --set-upstream-to=local/"$LOCAL_BRANCH"
 
     echo "Update pristine-tar and upstream"
     if git show-ref --verify --quiet refs/remotes/debian/pristine-tar; then
@@ -150,11 +129,7 @@ prepare_branches () {
     if git config --get-all remote.local.push | grep -q 'refs/heads'; then
         git config --unset-all remote.local.push
     fi
-    if [ "$DISTRIBUTION" = "unreleased" ]; then
-        git config --add remote.local.push refs/heads/master
-    else
-        git config --add remote.local.push refs/heads/master:refs/heads/"$DISTRIBUTION"
-    fi
+    git config --add remote.local.push refs/heads/master:refs/heads/"$LOCAL_BRANCH"
     git config --add remote.local.push refs/heads/pristine-tar
     git config --add remote.local.push refs/heads/gbp_upstream
 
@@ -227,7 +202,7 @@ release_tag=$(git tag --sort='version:refname' -l "$(expand_tag "$versions")" | 
 }' | tail -1)
 
 # Only process new upstream releases in the unreleased jobs
-if [ "$DISTRIBUTION" = "unreleased" ] && [ -n "$release_tag" ]; then
+if [ -n "$PROCESS_NUR" ] && [ -n "$release_tag" ]; then
     if ! git diff --quiet "$upstream_vcs_tag" "$release_tag"; then
         new_upstream_release="$(tag_to_version $release_tag)"
         new_version="$new_upstream_release-1"
@@ -289,7 +264,7 @@ fi
 
 declare -a GBP_ARGS
 GBP_ARGS=("--git-verbose" "--git-export-dir=$EXPORT_DIR"
-          "--git-dist=$target_distribution" "--git-overlay"
+          "--git-dist=$TARGET_DISTRIBUTION" "--git-overlay"
           "--git-no-sign-tags")
 
 cd "$REPO_DIR"
@@ -316,7 +291,7 @@ git push --follow-tags
 
 echo "Prepare source package"
 gbp buildpackage "${GBP_ARGS[@]}" \
-    -S -us -uc --changes-option="-DDistribution=$target_distribution"
+    -S -us -uc --changes-option="-DDistribution=$TARGET_DISTRIBUTION"
 
 # Push
 git push --follow-tags
@@ -330,10 +305,10 @@ cd "$EXPORT_DIR"
 find -maxdepth 1 -type f -exec chmod 0644 '{}' '+'
 
 # Avoid triggering the build if there are no changes pending
-if [ "$DISTRIBUTION" != "$current_distribution" ] || [ -n "$changes" ]; then
-    if [ "$DISTRIBUTION" != "unstable" ]; then
+if [ -n "$FORCE_BUILD" ] || [ -n "$changes" ]; then
+    if [ -n "$UPLOAD_HOST" ]; then
         # dput -u local "${source_name}_${epochless_version}_source.changes"
-        dupload -t local --nomail "${source_name}_${epochless_version}_source.changes"
+        dupload -t "$UPLOAD_HOST" --nomail "${source_name}_${epochless_version}_source.changes"
     fi
 
     touch "$EXPORT_DIR/trigger_build"

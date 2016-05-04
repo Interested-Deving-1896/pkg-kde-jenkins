@@ -99,8 +99,8 @@ prepare_branches () {
         git checkout -B master refs/remotes/debian/master
     fi
     git merge --no-edit refs/remotes/local/master
-    for ref in refs/remotes/local/"$LOCAL_BRANCH"
-               refs/remotes/debian/unstable
+    for ref in refs/remotes/local/"$LOCAL_BRANCH" \
+               refs/remotes/debian/unstable \
                refs/remotes/local/unstable; do
         if git show-ref --verify --quiet "$ref"; then
             git merge --no-edit "$ref"
@@ -169,16 +169,16 @@ print(c.getboolean("import-orig", "merge", fallback=""))
 ')
 export MERGE_UPSTREAM
 
-source_name=$(dpkg-parsechangelog -S source)
-current_distribution=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
+SOURCE_NAME=$(dpkg-parsechangelog -S source)
+CURRENT_DISTRIBUTION=$(dpkg-parsechangelog -S distribution | tr '[:upper:]' '[:lower:]')
 # TODO: Detect native packages and skip the upstream dance
-version=$(dpkg-parsechangelog -S version)
-epochless_version=${version##*:}
-upstream_version=${epochless_version%%-*}
+VERSION=$(dpkg-parsechangelog -S version)
+EPOCHLESS_VERSION=${VERSION##*:}
+UPSTREAM_VERSION=${EPOCHLESS_VERSION%%-*}
 # TODO: What about dfsg changes
-upstream_vcs_tag=$(expand_tag "$(version_to_tag "$upstream_version")")
-upstream_tag="upstream/$(version_to_tag "$upstream_version")"
-current_upstream_tag="$upstream_tag"
+UPSTREAM_RELEASE_TAG=$(expand_tag "$(version_to_tag "$UPSTREAM_VERSION")")
+UPSTREAM_TAG="upstream/$(version_to_tag "$UPSTREAM_VERSION")"
+CURRENT_UPSTREAM_TAG="$UPSTREAM_TAG"
 
 DCH="gbp dch"
 declare -a DCH_ARGS
@@ -187,34 +187,34 @@ DCH_ARGS=("--verbose" "--commit" "--multimaint-merge"
 DCH_ARGS+=("--snapshot")
 
 if [ "kgamma5" = "${JOB_NAME%_*}" ]; then
-    versions="[5-9]*"
+    VERSIONS="[5-9]*"
 else
-    versions="*"
+    VERSIONS="*"
 fi
 
 # ignore the "unstable" (*.*.70 + as well as the rc, alpha and beta tags) releases
-release_tag=$(git tag --sort='version:refname' -l "$(expand_tag "$versions")" | \
+RELEASE_TAG=$(git tag --sort='version:refname' -l "$(expand_tag "$VERSIONS")" | \
     sed -n -r '
 /([789][0-9]+|(rc|alpha|beta)[0-9]*)$/d
-/^'"$upstream_vcs_tag"'$/,$ {
-    /^'"$upstream_vcs_tag"'$/d
+/^'"$UPSTREAM_RELEASE_TAG"'$/,$ {
+    /^'"$UPSTREAM_RELEASE_TAG"'$/d
     p
 }' | tail -1)
 
 # Only process new upstream releases in the unreleased jobs
-if [ -n "$PROCESS_NUR" ] && [ -n "$release_tag" ]; then
-    if ! git diff --quiet "$upstream_vcs_tag" "$release_tag"; then
-        new_upstream_release="$(tag_to_version $release_tag)"
-        new_version="$new_upstream_release-1"
-        if [ "${version%%:*}" != "$version" ]; then
-            new_version="${version%%:*}:$new_version"
+if [ -n "$PROCESS_NUR" ] && [ -n "$RELEASE_TAG" ]; then
+    if ! git diff --quiet "$UPSTREAM_RELEASE_TAG" "$RELEASE_TAG"; then
+        NEW_UPSTREAM_RELEASE="$(tag_to_version $RELEASE_TAG)"
+        NEW_VERSION="$NEW_UPSTREAM_RELEASE-1"
+        if [ "${VERSION%%:*}" != "$VERSION" ]; then
+            NEW_VERSION="${VERSION%%:*}:$NEW_VERSION"
         fi
         # TODO: This also needs to take into account dsfg versions
-        DCH_ARGS+=("--new-version=$new_version")
+        DCH_ARGS+=("--new-version=$NEW_VERSION")
 
-        upstream_vcs_tag="$release_tag"
-        new_upstream_version="$(tag_to_version "$release_tag")"
-        upstream_tag="upstream/$(version_to_tag "$new_upstream_version")"
+        UPSTREAM_RELEASE_TAG="$RELEASE_TAG"
+        NEW_UPSTREAM_VERSION="$(tag_to_version "$RELEASE_TAG")"
+        UPSTREAM_TAG="upstream/$(version_to_tag "$NEW_UPSTREAM_VERSION")"
     fi
 fi
 
@@ -222,22 +222,22 @@ if gbp buildpackage --git-verbose --git-tag-only; then
     echo "Added missing tag"
 fi
 
-tag_version=$(echo "$version" | tr ':~' '%_')
-debian_tag="debian/$tag_version"
+TAG_VERSION=$(echo "$VERSION" | tr ':~' '%_')
+DEBIAN_TAG="debian/$TAG_VERSION"
 
 # check it the upstream_tag is present and use uscan if not.
-if ! git show-ref --verify --quiet "refs/tags/$current_upstream_tag"; then
+if ! git show-ref --verify --quiet "refs/tags/$CURRENT_UPSTREAM_TAG"; then
     uscan --destdir ../build --dehs --download-current-version > "$EXPORT_DIR/uscan.log"
-    downloaded_tarball=$(sed -n -r '
+    DOWNLOADED_TARBALL=$(sed -n -r '
 /<target-path>/ {
     s|</?target-path>||g
     p
 }' "$EXPORT_DIR/uscan.log")
-    gbp import-orig "${IMPORT_ORIG_ARGS[@]}" "$downloaded_tarball"
+    gbp import-orig "${IMPORT_ORIG_ARGS[@]}" "$DOWNLOADED_TARBALL"
 fi
 # if new upstream release, use gbp import-orig to fetch the new tarball
-if [ -n "$new_upstream_release" ] && \
-    ! git show-ref --verify --quiet "refs/tags/$upstream_tag"; then
+if [ -n "$NEW_UPSTREAM_RELEASE" ] && \
+    ! git show-ref --verify --quiet "refs/tags/$UPSTREAM_TAG"; then
     gbp import-orig "${IMPORT_ORIG_ARGS[@]}" --uscan
 fi
 # Push new upstream tags, if any
@@ -249,17 +249,17 @@ if [ -d "$UPSTREAM_DIR" ]; then
     rm -rf "$UPSTREAM_DIR"
     git worktree prune
 fi
-git worktree add "$UPSTREAM_DIR" "$upstream_tag"
+git worktree add "$UPSTREAM_DIR" "$UPSTREAM_TAG"
 
 echo "Call prepare hooks"
 
 cd "$WORKSPACE"
-export UPSTREAM_TAG="$upstream_tag"
+export UPSTREAM_TAG
 export UPSTREAM_TAG_TEMPLATE="upstream/{version}"
 
-hooks_dir='/srv/pkg-kde-jenkins/hooks/prepare'
-if [ -d "$hooks_dir" ]; then
-    run-parts --exit-on-error --verbose "$hooks_dir"
+HOOKS_DIR='/srv/pkg-kde-jenkins/hooks/prepare'
+if [ -d "$HOOKS_DIR" ]; then
+    run-parts --exit-on-error --verbose "$HOOKS_DIR"
 fi
 
 declare -a GBP_ARGS
@@ -268,20 +268,20 @@ GBP_ARGS=("--git-verbose" "--git-export-dir=$EXPORT_DIR"
           "--git-no-sign-tags")
 
 cd "$REPO_DIR"
-changes=""
-if [ -n "$new_upstream_release" ] || \
-    [ "$(git rev-list --left-right --count HEAD...$debian_tag)" != "0	0" ];
+CHANGES=""
+if [ -n "$NEW_UPSTREAM_RELEASE" ] || \
+    [ "$(git rev-list --left-right --count HEAD...$DEBIAN_TAG)" != "0	0" ];
 then
-    changes='true'
+    CHANGES='true'
     echo "Add a new changelog entry"
     ${DCH} "${DCH_ARGS[@]}"
 fi
 
 if [ -n "$MERGE_UPSTREAM" ]; then
-    git merge --no-edit "refs/tags/$upstream_tag"
+    git merge --no-edit "refs/tags/$UPSTREAM_TAG"
 fi
 
-if [ -n "$changes" ]; then
+if [ -n "$CHANGES" ]; then
     echo "Add the tag so the next call to gbp dch has something to compare with"
     gbp buildpackage --git-verbose --git-tag-only
 fi
@@ -297,18 +297,18 @@ gbp buildpackage "${GBP_ARGS[@]}" \
 git push --follow-tags
 
 # Upload source package locally
-version=$(dpkg-parsechangelog -S version)
-epochless_version=${version##*:}
+VERSION=$(dpkg-parsechangelog -S version)
+EPOCHLESS_VERSION=${VERSION##*:}
 cd "$EXPORT_DIR"
 # Fix permissions, else dput tries to do it remotely, which fails if the file
 # is already processed
 find -maxdepth 1 -type f -exec chmod 0644 '{}' '+'
 
 # Avoid triggering the build if there are no changes pending
-if [ -n "$FORCE_BUILD" ] || [ -n "$changes" ]; then
+if [ -n "$FORCE_BUILD" ] || [ -n "$CHANGES" ]; then
     if [ -n "$UPLOAD_HOST" ]; then
-        # dput -u local "${source_name}_${epochless_version}_source.changes"
-        dupload -t "$UPLOAD_HOST" --nomail "${source_name}_${epochless_version}_source.changes"
+        # dput -u local "${SOURCE_NAME}_${EPOCHLESS_VERSION}_source.changes"
+        dupload -t "$UPLOAD_HOST" --nomail "${SOURCE_NAME}_${EPOCHLESS_VERSION}_source.changes"
     fi
 
     touch "$EXPORT_DIR/trigger_build"

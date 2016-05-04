@@ -166,14 +166,14 @@ def get_packages(server, distribution):
             d = {}
             packages[package] = d
         d.setdefault('deps', set()).update(deps)
-        for distribution, value in result.items():
-            if distribution not in d:
-                d[distribution] = {}
-            d[distribution][part] = value
+        for dist, value in result.items():
+            if dist not in d:
+                d[dist] = {}
+            d[dist][part] = value
             if 'source_name' in value and 'source_name' not in d:
                 d['source_name'] = value['source_name']
-            if 'version' in value and 'version' not in d[distribution]:
-                d[distribution]['version'] = value['version']
+            if 'version' in value and 'version' not in d[dist]:
+                d[dist]['version'] = value['version']
     return packages
 
 

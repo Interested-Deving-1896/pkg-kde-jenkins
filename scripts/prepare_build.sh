@@ -37,14 +37,14 @@ case "$DISTRIBUTION" in
         TARGET_DISTRIBUTION='unstable'
         UPLOAD_HOST='local'
         FORCE_BUILD=
-        PROCESS_NUR='true'
+        CHECK_NEW_UPSTREAM='true'
         ;;
     *)
         LOCAL_BRANCH="$DISTRIBUTION"
         TARGET_DISTRIBUTION="$DISTRIBUTION"
         UPLOAD_HOST=
         FORCE_BUILD='true'
-        PROCESS_NUR=
+        CHECK_NEW_UPSTREAM=
         ;;
 esac
 
@@ -202,7 +202,7 @@ RELEASE_TAG=$(git tag --sort='version:refname' -l "$(expand_tag "$VERSIONS")" | 
 }' | tail -1)
 
 # Only process new upstream releases in the unreleased jobs
-if [ -n "$PROCESS_NUR" ] && [ -n "$RELEASE_TAG" ]; then
+if [ -n "$CHECK_NEW_UPSTREAM" ] && [ -n "$RELEASE_TAG" ]; then
     if ! git diff --quiet "$UPSTREAM_RELEASE_TAG" "$RELEASE_TAG"; then
         NEW_UPSTREAM_RELEASE="$(tag_to_version $RELEASE_TAG)"
         NEW_VERSION="$NEW_UPSTREAM_RELEASE-1"

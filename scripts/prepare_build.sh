@@ -218,7 +218,7 @@ if [ -n "$CHECK_NEW_UPSTREAM" ] && [ -n "$RELEASE_TAG" ]; then
     fi
 fi
 
-if gbp buildpackage --git-verbose --git-tag-only; then
+if gbp buildpackage --git-verbose --git-tag-only --git-no-sign-tags; then
     echo "Added missing tag"
 fi
 
@@ -283,7 +283,7 @@ fi
 
 if [ -n "$CHANGES" ]; then
     echo "Add the tag so the next call to gbp dch has something to compare with"
-    gbp buildpackage --git-verbose --git-tag-only
+    gbp buildpackage --git-verbose --git-tag-only --git-no-sign-tags
 fi
 
 # Push new changelog entry

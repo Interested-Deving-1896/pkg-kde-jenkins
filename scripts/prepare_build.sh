@@ -93,7 +93,7 @@ prepare_branches () {
     git fetch --all
 
     echo "Merge debian and local"
-    if gif show-ref --verify --quiet refs/remotes/debian/"$LOCAL_BRANCH"; then
+    if git show-ref --verify --quiet refs/remotes/debian/"$LOCAL_BRANCH"; then
         git checkout -B master refs/remotes/debian/"$LOCAL_BRANCH"
     else
         git checkout -B master refs/remotes/debian/master

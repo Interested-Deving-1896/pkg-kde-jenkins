@@ -178,7 +178,6 @@ UPSTREAM_VERSION=${EPOCHLESS_VERSION%%-*}
 # TODO: What about dfsg changes
 UPSTREAM_RELEASE_TAG=$(expand_tag "$(version_to_tag "$UPSTREAM_VERSION")")
 UPSTREAM_TAG="upstream/$(version_to_tag "$UPSTREAM_VERSION")"
-CURRENT_UPSTREAM_TAG="$UPSTREAM_TAG"
 
 DCH="gbp dch"
 declare -a DCH_ARGS
@@ -186,36 +185,44 @@ DCH_ARGS=("--verbose" "--commit" "--multimaint-merge"
           "--upstream-branch=gbp_upstream")
 DCH_ARGS+=("--snapshot")
 
-if [ "kgamma5" = "${JOB_NAME%_*}" ]; then
-    VERSIONS="[5-9]*"
-else
-    VERSIONS="*"
-fi
+if [ -n "$CHECK_NEW_UPSTREAM" ]; then
+    if [ "kgamma5" = "${JOB_NAME%_*}" ]; then
+        VERSIONS="[5-9]*"
+    else
+        VERSIONS="*"
+    fi
 
-# ignore the "unstable" (*.*.70 + as well as the rc, alpha and beta tags) releases
-RELEASE_TAG=$(git tag --sort='version:refname' -l "$(expand_tag "$VERSIONS")" | \
-    sed -n -r '
+    # ignore the "unstable" (*.*.70 + as well as the rc, alpha and beta tags) releases
+    RELEASE_TAG=$(git tag --sort='version:refname' -l "$(expand_tag "$VERSIONS")" | \
+        sed -n -r '
 /([789][0-9]+|(rc|alpha|beta)[0-9]*)$/d
 /^'"$UPSTREAM_RELEASE_TAG"'$/,$ {
     /^'"$UPSTREAM_RELEASE_TAG"'$/d
     p
 }' | tail -1)
 
-# Only process new upstream releases in the unreleased jobs
-if [ -n "$CHECK_NEW_UPSTREAM" ] && [ -n "$RELEASE_TAG" ]; then
-    if ! git diff --quiet "$UPSTREAM_RELEASE_TAG" "$RELEASE_TAG"; then
-        NEW_UPSTREAM_RELEASE="$(tag_to_version $RELEASE_TAG)"
-        NEW_VERSION="$NEW_UPSTREAM_RELEASE-1"
-        if [ "${VERSION%%:*}" != "$VERSION" ]; then
-            NEW_VERSION="${VERSION%%:*}:$NEW_VERSION"
+    # Only process new upstream releases in the unreleased jobs
+    if [ -n "$RELEASE_TAG" ]; then
+        if ! git diff --quiet "$UPSTREAM_RELEASE_TAG" "$RELEASE_TAG"; then
+            NEW_UPSTREAM_RELEASE="$(tag_to_version $RELEASE_TAG)"
+            NEW_UPSTREAM_TAG="upstream/$(version_to_tag "$NEW_UPSTREAM_RELEASE")"
         fi
-        # TODO: This also needs to take into account dsfg versions
-        DCH_ARGS+=("--new-version=$NEW_VERSION")
-
-        UPSTREAM_RELEASE_TAG="$RELEASE_TAG"
-        NEW_UPSTREAM_VERSION="$(tag_to_version "$RELEASE_TAG")"
-        UPSTREAM_TAG="upstream/$(version_to_tag "$NEW_UPSTREAM_VERSION")"
     fi
+
+    # No upstream git, use uscan to check the new version
+    if ! (git remote | grep -q 'upstream'); then
+        USCAN_UPSTREAM_VERSION=$(uscan --dehs --report-status | sed -n -r '
+/<upstream-version>/ {
+    s|</?upstream-version>||g
+    p
+}')
+        if dpkg --compare-version "$USCAN_UPSTREAM_VERSION" gt "$UPSTREAM_VERSION";
+        then
+            NEW_UPSTREAM_RELEASE="$USCAN_UPSTREAM_VERSION"
+            NEW_UPSTREAM_TAG="upstream/$(version_to_tag "$USCAN_UPSTREAM_VERSION")"
+        fi
+    fi
+
 fi
 
 if gbp buildpackage --git-verbose --git-tag-only --git-no-sign-tags; then
@@ -226,7 +233,7 @@ TAG_VERSION=$(echo "$VERSION" | tr ':~' '%_')
 DEBIAN_TAG="debian/$TAG_VERSION"
 
 # check it the upstream_tag is present and use uscan if not.
-if ! git show-ref --verify --quiet "refs/tags/$CURRENT_UPSTREAM_TAG"; then
+if ! git show-ref --verify --quiet "refs/tags/$UPSTREAM_TAG"; then
     uscan --destdir ../build --dehs --download-current-version > "$EXPORT_DIR/uscan.log"
     DOWNLOADED_TARBALL=$(sed -n -r '
 /<target-path>/ {
@@ -237,8 +244,18 @@ if ! git show-ref --verify --quiet "refs/tags/$CURRENT_UPSTREAM_TAG"; then
 fi
 # if new upstream release, use gbp import-orig to fetch the new tarball
 if [ -n "$NEW_UPSTREAM_RELEASE" ] && \
-    ! git show-ref --verify --quiet "refs/tags/$UPSTREAM_TAG"; then
+    ! git show-ref --verify --quiet "refs/tags/$NEW_UPSTREAM_TAG"; then
     gbp import-orig "${IMPORT_ORIG_ARGS[@]}" --uscan
+    # Check if the upstream release includes any change at all
+    if ! git diff --quiet refs/tags/$UPSTREAM_TAG refs/tags/$NEW_UPSTREAM_TAG;
+    then
+        NEW_VERSION="$NEW_UPSTREAM_RELEASE-1"
+        if [ "${VERSION%%:*}" != "$VERSION" ]; then
+            NEW_VERSION="${VERSION%%:*}:$NEW_VERSION"
+        fi
+        # TODO: This also needs to take into account dsfg versions
+        DCH_ARGS+=("--new-version=$NEW_VERSION")
+    fi
 fi
 # Push new upstream tags, if any
 git push --follow-tags

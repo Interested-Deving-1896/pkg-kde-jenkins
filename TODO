@@ -11,10 +11,6 @@
  * Add git hooks to local repo so that jenkins can trigger rebuilds faster
    (maybe, this can also not be such a good idea)
 
- * Abstract the upstream tag format
-
- * Deal with packages without upstream vcs
-
  * Deal with upstreams using svn
 
  * Talk with Holger about running this on the Debian Jenkins instance

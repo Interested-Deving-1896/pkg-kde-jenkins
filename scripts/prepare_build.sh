@@ -99,9 +99,11 @@ prepare_branches () {
     case "$LOCAL_BRANCH" in
         master)
             REFS+=("refs/remotes/debian/experimental")
+            ;&
         experimental)
             REFS+=("refs/remotes/local/experimental"
                    "refs/remotes/debian/unstable")
+            ;&
         unstable)
             REFS+=("refs/remotes/local/unstable")
             ;;

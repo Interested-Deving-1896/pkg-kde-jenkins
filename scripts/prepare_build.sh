@@ -255,14 +255,17 @@ if [ -n "$NEW_UPSTREAM_RELEASE" ] && \
     ! git show-ref --verify --quiet "refs/tags/$NEW_UPSTREAM_TAG"; then
     gbp import-orig "${IMPORT_ORIG_ARGS[@]}" --uscan
     # Check if the upstream release includes any change at all
-    if ! git diff --quiet refs/tags/$UPSTREAM_TAG refs/tags/$NEW_UPSTREAM_TAG;
+    if ! git diff --quiet "refs/tags/$UPSTREAM_TAG" "refs/tags/$NEW_UPSTREAM_TAG";
     then
+        UPSTREAM_TAG="$NEW_UPSTREAM_TAG"
         NEW_VERSION="$NEW_UPSTREAM_RELEASE-1"
         if [ "${VERSION%%:*}" != "$VERSION" ]; then
             NEW_VERSION="${VERSION%%:*}:$NEW_VERSION"
         fi
         # TODO: This also needs to take into account dsfg versions
         DCH_ARGS+=("--new-version=$NEW_VERSION")
+    else
+        NEW_UPSTREAM_RELEASE=
     fi
 fi
 # Push new upstream tags, if any

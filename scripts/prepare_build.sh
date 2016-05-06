@@ -15,10 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-# TODO: get the new upstream release with uscan if there is no upstream git
-# TODO: build against experimental, do we need to merge experimental into
-# unstable? or into local?
-
 set -x
 set -e
 
@@ -99,9 +95,21 @@ prepare_branches () {
         git checkout -B master refs/remotes/debian/master
     fi
     git merge --no-edit refs/remotes/local/master
-    for ref in refs/remotes/local/"$LOCAL_BRANCH" \
-               refs/remotes/debian/unstable \
-               refs/remotes/local/unstable; do
+    declare -a REFS
+    case "$LOCAL_BRANCH" in
+        master)
+            REFS+=("refs/remotes/debian/experimental")
+        experimental)
+            REFS+=("refs/remotes/local/experimental"
+                   "refs/remotes/debian/unstable")
+        unstable)
+            REFS+=("refs/remotes/local/unstable")
+            ;;
+        *)
+            REFS+=("refs/remotes/local/$LOCAL_BRANCH")
+            ;;
+    esac
+    for ref in "${REFS[@]}"; do
         if git show-ref --verify --quiet "$ref"; then
             git merge --no-edit "$ref"
         fi

@@ -149,6 +149,16 @@ def status(package):
     return _status('prepare') and _status('build') and _status('test')
 
 
+def tests_unstable(package):
+
+    def _status(part):
+        return package.get(part, {}).get('status', 'FAILURE') == 'SUCCESS'
+
+    def _unstable(part):
+        return package.get(part, {}).get('status', 'FAILURE') == 'UNSTABLE'
+    return _status('prepare') and _status('build') and _unstable('test')
+
+
 def check_deps(package, packages, distribution):
     for dep in package.get('deps', set()):
         at_distribution = packages.get(dep, {}).get(distribution, {})
@@ -209,13 +219,22 @@ def get_ready(packages, distribution):
         # print(version, epochless)
 
         if not status(package.get(distribution, {})):
-            new_version = debian_support.Version(
-                package['unreleased']['version'])
-            if new_version > epochless:
-                ready.setdefault('build', set()).add(package_name)
-                print('{} {}={} BUILD, currently: {}'.format(
-                    package_name, package['source_name'], new_version,
-                    version))
+            if tests_unstable(package.get(distribution, {})):
+                new_version = debian_support.Version(
+                    package[distribution]['version'])
+                if new_version > epochless:
+                    ready.setdefault('unstable', set()).add(package_name)
+                    print('{} {}={} UNSTABLE, currently: {}'.format(
+                        package_name, package['source_name'], new_version,
+                        version))
+            else:
+                new_version = debian_support.Version(
+                    package['unreleased']['version'])
+                if new_version > epochless:
+                    ready.setdefault('build', set()).add(package_name)
+                    print('{} {}={} BUILD, currently: {}'.format(
+                        package_name, package['source_name'], new_version,
+                        version))
         else:
             new_version = debian_support.Version(
                 package[distribution]['version'])
@@ -237,6 +256,10 @@ def list_todo_distribution(server, packages, trigger, distribution):
     print('\n###\n# Upload\n###')
     if 'upload' in ready:
         for package in ready['upload']:
+            print(package)
+    print('\n###\n# UNSTABLE\n###')
+    if 'unstable' in ready:
+        for package in ready['unstable']:
             print(package)
     print('\n###\n# BUILD\n###')
     if 'build' in ready:

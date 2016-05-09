@@ -110,7 +110,7 @@ version=$(dpkg-parsechangelog -S version)
 epochless_version=${version##*:}
 upstream_version=${epochless_version%%-*}
 
-if git remote | ! grep -q 'upstream'; then
+if ! (git remote | grep -q 'upstream'); then
     # No upstream remote
     # TODO: use uscan
     check_uscan

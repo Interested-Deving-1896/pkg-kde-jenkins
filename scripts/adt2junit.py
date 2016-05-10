@@ -26,11 +26,11 @@ class Test(object):
 
 hour = Regex(r'[0-9]{2}:[0-9]{2}:[0-9]{2}')
 
-adt_msg = LineStart() + 'adt-run' + '[' + hour + ']:'
+adt_msg = 'adt-run' + '[' + hour + ']:'
 
 adt_testname = Word(alphanums).setResultsName('name')
 
-adt_start = adt_msg + 'test' + adt_testname + ':' + '[' + OneOrMore('-')
+adt_start = LineStart() + adt_msg + 'test' + adt_testname + ':' + '[' + OneOrMore('-')
 adt_end = (
     adt_msg + 'test' + matchPreviousExpr(adt_testname) + ':' +
     OneOrMore('-') + ']'

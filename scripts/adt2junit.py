@@ -5,7 +5,7 @@ import argparse
 import sys
 
 from junit_xml import TestSuite, TestCase
-from pyparsing import (LineStart, OneOrMore,
+from pyparsing import (LineStart, Literal, OneOrMore,
                        Regex, SkipTo, Word, ZeroOrMore, alphanums,
                        matchPreviousExpr)
 
@@ -20,17 +20,19 @@ class Test(object):
         self.name = tokens.name
         self.output = tokens.output[0]
         self.status = tokens.status
+        print(self)
 
     def __str__(self):
         return "{{Test {} {}}}".format(self.name, self.status)
 
 hour = Regex(r'[0-9]{2}:[0-9]{2}:[0-9]{2}')
 
-adt_msg = 'adt-run' + '[' + hour + ']:'
+adt_msg = Literal('adt-run') + '[' + hour + ']:'
+adt_msg_line = LineStart() + adt_msg
 
 adt_testname = Word(alphanums).setResultsName('name')
 
-adt_start = LineStart() + adt_msg + 'test' + adt_testname + ':' + '[' + OneOrMore('-')
+adt_start = adt_msg_line + 'test' + adt_testname + ':' + '[' + OneOrMore('-')
 adt_end = (
     adt_msg + 'test' + matchPreviousExpr(adt_testname) + ':' +
     OneOrMore('-') + ']'

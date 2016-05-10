@@ -20,7 +20,6 @@ class Test(object):
         self.name = tokens.name
         self.output = tokens.output[0]
         self.status = tokens.status
-        print(self)
 
     def __str__(self):
         return "{{Test {} {}}}".format(self.name, self.status)
@@ -79,7 +78,7 @@ def main():
                            help='Output file', default=sys.stdout)
     args = argparser.parse_args()
 
-    test_cases = generate_test_cases(adt_test.parseFile(args.input))
+    test_cases = generate_test_cases(adt_tests.parseFile(args.input))
     test_suite = TestSuite('Autopkgtest', test_cases)
     args.output.write(TestSuite.to_xml_string([test_suite]))
 

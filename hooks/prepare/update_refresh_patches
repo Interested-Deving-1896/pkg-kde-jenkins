@@ -41,9 +41,6 @@ def process_options():
     arg_parser.add_argument('--upstream-tag-template',
                             default=os.environ.get('UPSTREAM_TAG_TEMPLATE',
                                                    'upstream/{version}'))
-    arg_parser.add_argument(
-        '--merged-upstream', action='store_true',
-        default=('true' == os.environ.get('MERGE_UPSTREAM', '').lower()))
     args = arg_parser.parse_args()
 
     if args.debug:
@@ -157,11 +154,9 @@ def main():
         logging.info('Missing tags, skipping')
         sys.exit(0)
 
-    merged_branch = 'master'
-    if not options.merged_upstream:
-        merged_branch = 'update_patches/merged'
-        # Create a merged branch
-        create_merged_branch(package_dir, current_tag, merged_branch)
+    merged_branch = 'update_patches/merged'
+    # Create a merged branch
+    create_merged_branch(package_dir, current_tag, merged_branch)
 
     # Import patches
     import_patches(package_dir)
@@ -180,8 +175,7 @@ def main():
         logging.info('No changes were needed')
         sys.exit(0)
 
-    if not options.merged_upstream:
-        cherry_pick_changes(package_dir, last_commit)
+    cherry_pick_changes(package_dir, last_commit)
 
 
 if __name__ == '__main__':

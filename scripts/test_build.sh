@@ -49,9 +49,8 @@ esac
 
 
 run_adt () {
-    multi_changes="$(ls "$EXPORT_DIR/"*_*_multi.changes)"
     declare -a ADT_ARGS
-    ADT_ARGS=("-U" "$multi_changes" "--output-dir=$EXPORT_DIR/adt.artifacts")
+    ADT_ARGS=("-U" "$CHANGES_FILE" "--output-dir=$EXPORT_DIR/adt.artifacts")
     for repository in "${EXTRA_REPOSITORIES[@]}"; do
         ADT_ARGS+=("--setup-commands=sed -i '\$a\\$repository' /etc/apt/sources.list")
     done
@@ -80,6 +79,7 @@ cd "$EXPORT_DIR"
 mergechanges -f  "$source_changes" "$arch_changes"
 # Fix permissions
 find -maxdepth 1 -type f -exec chmod 0644 '{}' '+'
+export CHANGES_FILE="$(ls "$EXPORT_DIR/"*_*_multi.changes)"
 
 echo "Run autopkgtests"
 dsc_file="$(ls "$EXPORT_DIR/"*_*.dsc)"

@@ -253,9 +253,10 @@ if ! git show-ref --verify --quiet "refs/tags/$UPSTREAM_TAG"; then
     gbp import-orig "${IMPORT_ORIG_ARGS[@]}" "$DOWNLOADED_TARBALL"
 fi
 # if new upstream release, use gbp import-orig to fetch the new tarball
-if [ -n "$NEW_UPSTREAM_RELEASE" ] && \
-    ! git show-ref --verify --quiet "refs/tags/$NEW_UPSTREAM_TAG"; then
-    gbp import-orig "${IMPORT_ORIG_ARGS[@]}" --uscan
+if [ -n "$NEW_UPSTREAM_RELEASE" ]; then
+    if ! git show-ref --verify --quiet "refs/tags/$NEW_UPSTREAM_TAG"; then
+        gbp import-orig "${IMPORT_ORIG_ARGS[@]}" --uscan
+    fi
     # Check if the upstream release includes any change at all
     if ! git diff --quiet "refs/tags/$UPSTREAM_TAG" "refs/tags/$NEW_UPSTREAM_TAG";
     then

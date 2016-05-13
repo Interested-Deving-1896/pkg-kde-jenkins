@@ -101,10 +101,11 @@ def generate_test_cases(bug_reports, closes, bug_nrs):
         name = bug.package if bug.package else bug.source
         tags_str = '({})'.format(','.join(bug.tags)) if bug.tags else ''
         summary = bug.summary if bug.summary else bug.subject
+        url = 'https://bugs.debian.org/{}'.format(bug.bug_num)
         test_case = TestCase(name, bug.bug_num)
         test_case.stdout = str(bug)
-        msg = '{name}[{bug.bug_num}]/{bug.severity}{tags} {summary}'.format(
-            name=name, bug=bug, tags=tags_str, summary=summary)
+        msg = '{name}[{bug.bug_num}]/{bug.severity}{tags} {summary} {url}'.format(
+            name=name, bug=bug, tags=tags_str, summary=summary, url=url}
         logging.info(msg)
         if bug.severity in ('critical', 'grave', 'serious'):
             test_case.add_error_info(msg)

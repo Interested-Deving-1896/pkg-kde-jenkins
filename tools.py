@@ -162,7 +162,20 @@ def tests_unstable(package):
 def check_deps(package, packages, distribution):
     for dep in package.get('deps', set()):
         at_distribution = packages.get(dep, {}).get(distribution, {})
-        if not status(at_distribution):
+        if not (status(at_distribution) or tests_unstable(at_distribution)):
+            return False
+    return True
+
+
+def check_deps_version(package, packages, distribution):
+    for dep in package.get('deps', set()):
+        dep_package = packages.get(dep, {})
+        at_distribution = dep_package.get(distribution, {})
+        if 'version' not in at_distribution:
+            return False
+
+        new_version = debian_support.Version(at_distribution['version'])
+        if new_version.upstream_version > dep_package['debian_version'].upstream_version:
             return False
     return True
 
@@ -205,9 +218,12 @@ def version_at_distribution(source_name):
 
 def get_ready(packages, distribution):
     ready = {}
+    # process packages and collect the packages for the second_phase
+    second_phase = set()
     for package_name, package in packages.items():
         # print(package_name, package)
-        if 'unreleased' not in package or not status(package['unreleased']):
+        if not (status(package.get('unreleased', {})) or
+                tests_unstable(package.get('unreleased', {}))):
             continue
         # print(package_name)
         if not check_deps(package, packages, distribution):
@@ -217,32 +233,41 @@ def get_ready(packages, distribution):
         epochless = debian_support.Version(version)
         epochless.epoch = None
         # print(version, epochless)
+        package['debian_version'] = epochless
 
-        if not status(package.get(distribution, {})):
-            if tests_unstable(package.get(distribution, {})):
-                new_version = debian_support.Version(
-                    package[distribution]['version'])
-                if new_version > epochless:
-                    ready.setdefault('unstable', set()).add(package_name)
-                    print('{} {}={} UNSTABLE, currently: {}'.format(
-                        package_name, package['source_name'], new_version,
-                        version))
-            else:
-                new_version = debian_support.Version(
-                    package['unreleased']['version'])
-                if new_version > epochless:
-                    ready.setdefault('build', set()).add(package_name)
-                    print('{} {}={} BUILD, currently: {}'.format(
-                        package_name, package['source_name'], new_version,
-                        version))
+        second_phase.add(package_name)
+
+    for package_name in second_phase:
+        package = packages[package_name]
+
+        new_version = debian_support.Version(package['unreleased']['version'])
+        if new_version <= package['debian_version']:
+            continue
+
+        if not check_deps_version(package, packages, distribution):
+            continue
+
+        status_ok = status(package.get(distribution, {}))
+        status_unstable = tests_unstable(package.get(distribution, {}))
+        newer = (status_ok or status_unstable) and (debian_support.Version(
+            package[distribution]['version']) > epochless)
+
+        if status_ok and newer:
+            ready.setdefault('upload', set()).add(package_name)
+            print('{} {}={} UPLOAD, currently: {}'.format(
+                package_name, package['source_name'], new_version,
+                version))
+        elif status_unstable and newer:
+            ready.setdefault('unstable', set()).add(package_name)
+            print('{} {}={} UNSTABLE, currently: {}'.format(
+                package_name, package['source_name'], new_version,
+                version))
         else:
-            new_version = debian_support.Version(
-                package[distribution]['version'])
-            if new_version > epochless:
-                ready.setdefault('upload', set()).add(package_name)
-                print('{} {}={} UPLOAD, currently: {}'.format(
-                    package_name, package['source_name'], new_version,
-                    version))
+            ready.setdefault('build', set()).add(package_name)
+            print('{} {}={} BUILD, currently: {}'.format(
+                package_name, package['source_name'], new_version,
+                version))
+
     return ready
 
 

@@ -1101,7 +1101,7 @@ class ReqToDebianPkg(object):
         'Phonon': {name: 'libphonon4qt5-dev'},
         'Phonon4Qt5': {name: 'libphonon4qt5-dev'},
         'PkgConfig': {name: 'pkg-config'},
-        'Plymouth': {name: 'plymouth-dev'},
+        'Plymouth': {name: 'libplymouth-dev'},
         'PolkitQt5-10.103.0': {name: 'libpolkit-qt5-1-dev'},
         'Poppler': {name: 'libpoppler-qt4-dev'},
         'PopplerQt5': {name: 'libpoppler-qt5-dev'},

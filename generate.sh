@@ -32,7 +32,8 @@ fi
 python3 jjb-builder.py -o jobs/projects.yaml \
     --local-vcs "ssh://freak.gnuservers.com.ar/git" \
     --basedir ~/debian \
-    @framework.paths @plasma.paths @applications.paths @extras.paths
+    @framework.paths @plasma.paths @applications.paths @extras.paths \
+    @req.paths @std.paths
 
 ./test.sh
 

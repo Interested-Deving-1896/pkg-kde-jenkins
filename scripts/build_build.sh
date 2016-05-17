@@ -102,13 +102,13 @@ if [ "$arch" = "amd64" ]; then
 fi
 
 case "$DISTRIBUTION" in
-    unstable)
-        SBUILD_ARGS+=("--extra-repository=deb http://incoming.debian.org/debian-buildd buildd-unstable main")
-        ;;
     experimental)
         SBUILD_ARGS+=("--extra-repository=deb http://incoming.debian.org/debian-buildd buildd-experimental main")
         SBUILD_ARGS+=("--extra-repository=deb http://httpredir.debian.org/debian experimental main")
         SBUILD_ARGS+=("--build-dep-resolver=aspcud")
+        ;&
+    unstable)
+        SBUILD_ARGS+=("--extra-repository=deb http://incoming.debian.org/debian-buildd buildd-unstable main")
         ;;
     *)
         SBUILD_ARGS+=("--extra-repository=$local_repository")

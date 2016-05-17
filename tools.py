@@ -175,6 +175,8 @@ def check_deps_version(package, packages, distribution):
             return False
 
         new_version = debian_support.Version(at_distribution['version'])
+        if 'debian_version' not in dep_package:
+            return False
         if new_version.upstream_version > dep_package['debian_version'].upstream_version:
             return False
     return True

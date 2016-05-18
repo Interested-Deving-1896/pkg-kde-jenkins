@@ -61,7 +61,8 @@ def get_changes_info(filename):
     with open(filename, encoding='utf-8') as fp:
         changes = deb822.Changes(fp)
         changelog_block = changelog.ChangeBlock(
-            changes=changes.get('Changes', ''))
+            changes=changes.get('Changes', '').split('\n'))
+        logging.debug('Bugs closed: ', changelog_block.bugs_closed)
         return (changes['Source'], changes.get('Binary', '').split(),
                 set(changelog_block.bugs_closed))
 

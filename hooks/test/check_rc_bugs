@@ -99,6 +99,9 @@ def generate_test_cases(bug_reports, closes, bug_nrs):
         bug_aliases = {bug.bug_num} | set(bug.mergedwith)
         if bug_aliases & closes:
             continue
+        # Ignore done bugs
+        if bug.done:
+            continue
         name = bug.package if bug.package else bug.source
         tags_str = '({})'.format(','.join(bug.tags)) if bug.tags else ''
         summary = bug.summary if bug.summary else bug.subject

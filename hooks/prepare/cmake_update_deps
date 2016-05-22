@@ -1094,7 +1094,7 @@ class ReqToDebianPkg(object):
         'PAM': {name: 'libpam0g-dev'},
         'PCIUTILS': {name: 'libpci-dev'},
         'PCRE': {name: 'libpcre3-dev'},
-        'PNG': {name: 'libpng12-dev'},
+        'PNG': {name: 'libpng-dev'},
         'PWQuality': {name: 'libpwquality-dev'},
         'PackageKitQt5': {name: 'libpolkit-qt5-1-dev'},
         'Perl': {name: 'perl'},

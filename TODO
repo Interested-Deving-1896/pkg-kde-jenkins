@@ -14,3 +14,6 @@
  * Deal with upstreams using svn
 
  * Talk with Holger about running this on the Debian Jenkins instance
+
+ * BUG in dbgsym-migration: needs to use << instead of <= if dist !=
+   UNRELEASED

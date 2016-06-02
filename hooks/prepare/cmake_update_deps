@@ -801,7 +801,7 @@ class ReqToDebianPkg(object):
         'Analitza5': {name: 'libanalitza-dev'},
         'AppstreamQt': {name: 'libappstreamqt-dev'},
         'AstrometryNet': {name: 'astrometry.net'},
-        'Automoc4': {name: 'automoc'},
+        'Automoc4': None,  # No longer needed
         'Avahi': {name: 'libavahi-common-dev'},
         'BISON': {name: 'bison'},
         'BZip2': {name: 'libbz2-dev'},

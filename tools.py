@@ -422,7 +422,7 @@ def list_unreleased(packages):
             _status(p, 'test')))
 
 
-def list_topsort(packages, distribution):
+def list_topsort(server, packages, trigger, distribution):
 
     distributions = {distribution}
     if distribution == 'experimental':
@@ -499,6 +499,9 @@ def list_topsort(packages, distribution):
             package['status'] = 'unstable'
         else:
             package['status'] = 'build'
+            if trigger:
+                job_name = '{}_prepare'.format(name)
+                server.build_job(job_name, {'DISTRIBUTION': distribution})
 
     for tier, items in enumerate(tiers):
         print('\n###\n# Tier {}\n###'.format(tier + 1))
@@ -545,7 +548,7 @@ def main():
     elif options.mode == 'unreleased':
         list_unreleased(packages)
     elif options.mode == 'topsort':
-        list_topsort(packages, options.distribution)
+        list_topsort(server, packages, options.trigger, options.distribution)
 
     # test(server)
     sys.exit(0)

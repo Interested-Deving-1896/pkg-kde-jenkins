@@ -118,7 +118,7 @@ esac
 if ! sbuild "${SBUILD_ARGS[@]}" "$dsc_file"; then
     # Check if it was a Hash Sum mismatch and retry, once
     buildlog=$(find -type f -name '*'"$arch"'*.build')
-    if grep -q 'E: Failed to fetch.*Hash Sum mismatch' "$buildlog"; then
+    if [ -f "$buildlog" ] && grep -q 'E: Failed to fetch.*Hash Sum mismatch' "$buildlog"; then
         # Avoid confusing hooks and the like
         rm "$buildlog"
         sbuild "${SBUILD_ARGS[@]}" "$dsc_file"

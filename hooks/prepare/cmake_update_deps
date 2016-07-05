@@ -575,6 +575,11 @@ class CMakeParser(Parser):
         # logging.debug(invocation)
         subdir = self.expand(invocation[1])
         filename = self.relative_dirname_join(subdir, 'CMakeLists.txt')
+        if not os.path.exists(filename):
+            logging.warn(
+                'File: {} not found, cmake project incomplete?'.format(
+                    filename))
+            return
         # logging.debug(filename)
         self.run_file(filename)
 

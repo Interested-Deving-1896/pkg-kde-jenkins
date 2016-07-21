@@ -26,7 +26,7 @@ class Test(object):
 
 hour = Regex(r'[0-9]{2}:[0-9]{2}:[0-9]{2}')
 
-adt_msg = Literal('adt-run') + '[' + hour + ']:'
+adt_msg = (Literal('adt-run') | Literal('autopkgtest')) + '[' + hour + ']:'
 adt_msg_line = LineStart() + adt_msg
 
 adt_testname = Word(alphanums).setResultsName('name')

@@ -30,6 +30,8 @@ def process_options():
     arg_parser.add_argument('--mode', default='todo',
                             choices=['todo', 'fix', 'unreleased', 'topsort',
                                      'trigger'])
+    arg_parser.add_argument('--part', default='prepare',
+                            choices=['prepare', 'build', 'test'])
     arg_parser.add_argument('--trigger', action='store_true')
     arg_parser.add_argument('--packages', nargs='+')
     args = arg_parser.parse_args()
@@ -524,7 +526,7 @@ def list_topsort(server, packages, trigger, distribution):
 
 def trigger(server, options):
     for package in options.packages:
-        job_name = '{}_prepare'.format(package)
+        job_name = '{}_{}'.format(package, options.part)
         server.build_job(job_name, {'DISTRIBUTION': options.distribution})
 
 

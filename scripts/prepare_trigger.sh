@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-
 set -e
 set -x
 
@@ -46,41 +45,41 @@ print(c.get("import-orig", "upstream-vcs-tag", fallback="v%(version)s"))
 export UPSTREAM_VCS_TAG
 
 expand_tag () {
-    local version
+    local VERSION
     if [ $# -lt 1 ]; then
         echo "$UPSTREAM_VCS_TAG"
         return
     fi
-    version="$1"
-    python -c "print '$UPSTREAM_VCS_TAG' % {'version': '$version'}"
+    VERSION="$1"
+    python -c "print '$UPSTREAM_VCS_TAG' % {'version': '$VERSION'}"
 }
 
 # Check for new upstream releases
 check_upstream_vcs() {
     # TODO: What about dfsg tags?
-    upstream_tag=$(expand_tag "${upstream_version}")
+    UPSTREAM_TAG=$(expand_tag "${UPSTREAM_VERSION}")
 
     if [ "kgamma5" = "${JOB_NAME%_*}" ]; then
-        versions="[5-9]*"
+        VERSIONS="[5-9]*"
     else
-        versions="*"
+        VERSIONS="*"
     fi
     # ignore the "unstable" (*.*.70 + as well as the rc, alpha and beta tags) releases
-    release_tag=$(git tag --sort='version:refname' -l "$(expand_tag "$versions")" | \
+    RELEASE_TAG=$(git tag --sort='version:refname' -l "$(expand_tag "$VERSIONS")" | \
         sed -n -r '
-    /([789][0-9]+|(rc|alpha|beta)[0-9]*)$/d
     /^'"${upstream_tag}"'$/,$ {
         /^'"${upstream_tag}"'$/d
+        /([789][0-9]+|(rc|alpha|beta)[0-9]*)$/d
         p
     }' | tail -1)
 
 
-    if [ -z "${release_tag}" ]; then
+    if [ -z "${RELEASE_TAG}" ]; then
         # No new release
         exit 2
     fi
 
-    if git diff --quiet "${upstream_tag}" "${release_tag}"; then
+    if git diff --quiet "${upstream_tag}" "${RELEASE_TAG}"; then
         # No changes between releases
         exit 3
     fi
@@ -88,13 +87,13 @@ check_upstream_vcs() {
 }
 
 check_uscan() {
-    new_upstream_version=$(uscan --report-status --dehs | sed -n -r '
+    NEW_UPSTREAM_VERSION=$(uscan --report-status --dehs | sed -n -r '
 /<upstream-version>/ {
     s|</?upstream-version>||g
     p
 }')
 
-    if dpkg --compare-versions "$new_upstream_version" gt "$upstream_version";
+    if dpkg --compare-versions "$NEW_UPSTREAM_VERSION" gt "$UPSTREAM_VERSION";
     then
         exit 0
     fi
@@ -106,9 +105,9 @@ if grep -q 'native' debian/source/format; then
     exit 4
 fi
 
-version=$(dpkg-parsechangelog -S version)
-epochless_version=${version##*:}
-upstream_version=${epochless_version%%-*}
+VERSION=$(dpkg-parsechangelog -S version)
+EPOCHLESS_VERSION=${VERSION##*:}
+UPSTREAM_VERSION=${EPOCHLESS_VERSION%%-*}
 
 if ! (git remote | grep -q 'upstream'); then
     # No upstream remote

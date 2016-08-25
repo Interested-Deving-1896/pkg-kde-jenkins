@@ -815,7 +815,7 @@ class ReqToDebianPkg(object):
         'Boost': {name: 'libboost-dev'},
         'BoostPython': {name: 'libboost-python-dev'},
         'Boostgraph': {name: 'libboost-graph-dev'},
-        'Breeze': {name: 'breeze-dev'},
+        'Breeze': {name: 'breeze-dev', epoch: 4},
         'CFITSIO': {name: 'libcfitsio-dev'},
         'CFitsio': {name: 'libcfitsio-dev'},
         'CHM': {name: 'libchm-dev'},

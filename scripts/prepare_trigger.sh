@@ -67,8 +67,8 @@ check_upstream_vcs() {
     # ignore the "unstable" (*.*.70 + as well as the rc, alpha and beta tags) releases
     RELEASE_TAG=$(git tag --sort='version:refname' -l "$(expand_tag "$VERSIONS")" | \
         sed -n -r '
-    /^'"${upstream_tag}"'$/,$ {
-        /^'"${upstream_tag}"'$/d
+    /^'"${UPSTREAM_TAG}"'$/,$ {
+        /^'"${UPSTREAM_TAG}"'$/d
         /([789][0-9]+|(rc|alpha|beta)[0-9]*)$/d
         p
     }' | tail -1)
@@ -79,7 +79,7 @@ check_upstream_vcs() {
         exit 2
     fi
 
-    if git diff --quiet "${upstream_tag}" "${RELEASE_TAG}"; then
+    if git diff --quiet "${UPSTREAM_TAG}" "${RELEASE_TAG}"; then
         # No changes between releases
         exit 3
     fi

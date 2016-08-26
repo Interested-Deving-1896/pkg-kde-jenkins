@@ -205,9 +205,9 @@ if [ -n "$CHECK_NEW_UPSTREAM" ]; then
     # ignore the "unstable" (*.*.70 + as well as the rc, alpha and beta tags) releases
     RELEASE_TAG=$(git tag --sort='version:refname' -l "$(expand_tag "$VERSIONS")" | \
         sed -n -r '
-/([789][0-9]+|(rc|alpha|beta)[0-9]*)$/d
 /^'"$UPSTREAM_RELEASE_TAG"'$/,$ {
     /^'"$UPSTREAM_RELEASE_TAG"'$/d
+    /([789][0-9]+|(rc|alpha|beta)[0-9]*)$/d
     p
 }' | tail -1)
 

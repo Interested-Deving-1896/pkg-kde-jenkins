@@ -930,7 +930,7 @@ class ReqToDebianPkg(object):
         'KF5DNSSD': {name: 'libkf5dnssd-dev'},
         'KF5Declarative': {name: 'libkf5declarative-dev'},
         'KF5DesignerPlugin': {name: 'kdesignerplugin'},
-        'KF5DocTools': {name: 'kdoctools-dev'},
+        'KF5DocTools': {name: 'libkf5doctools-dev'},
         'KF5Emoticons': {name: 'libkf5emoticons-dev'},
         'KF5EventViews': {name: 'libkf5eventviews-dev'},
         'KF5FileMetaData': {name: 'libkf5filemetadata-dev'},

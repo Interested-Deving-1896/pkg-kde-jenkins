@@ -98,7 +98,7 @@ def create_merged_branch(workdir, tag, merged_branch):
     cmd = ['git', 'checkout', '-B', merged_branch]
     subprocess.run(cmd, cwd=workdir, check=True)
     full_tag = 'refs/tags/{}'.format(tag)
-    cmd = ['git', 'merge', '--no-edit', full_tag]
+    cmd = ['git', 'merge', '--allow-unrelated-histories', '--no-edit', full_tag]
     subprocess.run(cmd, cwd=workdir, check=True)
 
 

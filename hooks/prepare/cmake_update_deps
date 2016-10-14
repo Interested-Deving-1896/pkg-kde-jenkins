@@ -917,7 +917,7 @@ class ReqToDebianPkg(object):
         'KF5Bookmarks': {name: 'libkf5bookmarks-dev'},
         'KF5CalendarCore': {name: 'libkf5calendarcore-dev'},
         'KF5CalendarSupport': {name: 'libkf5calendarsupport-dev'},
-        'KF5CalendarUtils': {name: 'libkf5calendarutils-dev'},
+        'KF5CalendarUtils': {name: 'libkf5calendarutils-dev', epoch: 4},
         'KF5Codecs': {name: 'libkf5codecs-dev'},
         'KF5Completion': {name: 'libkf5completion-dev'},
         'KF5ComposerEditorNG': {name: 'libkf5composereditorng-dev'},

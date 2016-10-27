@@ -860,7 +860,7 @@ class ReqToDebianPkg(object):
         'GLIB2': {name: 'libglib2.0-dev'},
         'GMP': {name: 'libgmp-dev'},
         'GObject': {name: 'libglib2.0-dev'},
-        'GSL': {name: 'libgsl0-dev'},
+        'GSL': {name: 'libgsl-dev'},
         'GSSAPI': {name: 'libkrb5-dev'},
         'GTK2': {name: 'libgtk2.0-dev'},
         'GTK3': {name: 'libgtk-3-dev'},

@@ -38,5 +38,5 @@ python3 jjb-builder.py -o jobs/projects.yaml \
 ./test.sh
 
 if ! ${no_act}; then
-    jenkins-job-builder --conf jjb.ini update -r jobs
+    python3-jenkins-jobs --conf jjb.ini update -r jobs
 fi

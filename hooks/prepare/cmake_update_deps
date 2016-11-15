@@ -496,38 +496,40 @@ class CMakeParser(Parser):
 
     def product_mixed(self, spec):
         # logging.debug(spec)
-        l = list(map(lambda a: ''.join(a), itertools.product(*spec)))
-        if len(l) == 1:
-            return l[0]
-        return l
+        xs = list(map(lambda a: ''.join(a), itertools.product(*spec)))
+        if len(xs) == 1:
+            return xs[0]
+        return xs
 
     def expand(self, values):
-        l = []
+        xs = []
         if isinstance(values, tuple) and values[0] in ('VAR', 'ENV'):
             values = [values]
 
         for value in values:
+            if isinstance(value, list):
+                value = self.expand(value)
             if value[0] == 'VAR':
                 var_name = self.expand(value[1])
                 if var_name in self.variables:
-                    logging.debug('Append: {} + {}'.format(l,
+                    logging.debug('Append: {} + {}'.format(xs,
                                                            self.variables[var_name]))
-                    l.append(self.variables[var_name])
+                    xs.append(self.variables[var_name])
                 else:
                     logging.error('var {} not found'.format(var_name))
-                    l.append('')
+                    xs.append('')
             elif value[0] == 'ENV':
                 var_name = self.expand(value[1])
                 if var_name in os.environ:
-                    l.append(os.environ[var_name])
+                    xs.append(os.environ[var_name])
                 else:
                     logging.error('env {} not found'.format(var_name))
-                    l.append('')
+                    xs.append('')
             else:
-                l.append(value)
-            if not isinstance(l[-1], list):
-                l[-1] = [l[-1]]
-        return self.product_mixed(l)
+                xs.append(value)
+            if not isinstance(xs[-1], list):
+                xs[-1] = [xs[-1]]
+        return self.product_mixed(xs)
 
     def relative_dirname_join(self, *args):
         dirname = os.path.dirname(self.file_stack[-1])

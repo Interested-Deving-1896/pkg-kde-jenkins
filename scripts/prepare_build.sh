@@ -51,13 +51,15 @@ expand_tag () {
         return
     fi
     version="$1"
-    python -c "print '$UPSTREAM_VCS_TAG' % {'version': '$version'}"
+    python3 -c "print('$UPSTREAM_VCS_TAG' % {'version': '$version'})"
 }
 tag_to_version () {
-    echo "$1" | sed 's/^v//;s|^upstream/||;y/%_/:~/'
+    echo "$1" | sed 's/^v//;s|^upstream/||;y/%_/:~/;s/#//'
 }
 version_to_tag () {
-    echo "$1" | tr ':~' '%_'
+    echo "$1" | tr ':~' '%_' | python3 -c '
+import re
+print(re.sub(r"\.(?=\.|$|lock$)", ".#", input()))'
 }
 
 

@@ -294,23 +294,23 @@ def get_ready(packages, distributions):
         status_ok = status(p)
         status_unstable = tests_unstable(p)
         newer = (status_ok or status_unstable) and (debian_support.Version(
-            p['version']) > epochless)
+            p['version']) > package['debian_version'])
 
         if status_ok and newer:
             ready.setdefault('upload', set()).add(package_name)
             print('{} {}={} UPLOAD, currently: {}'.format(
                 package_name, package['source_name'], new_version,
-                version))
+                package['debian_version']))
         elif status_unstable and newer:
             ready.setdefault('unstable', set()).add(package_name)
             print('{} {}={} UNSTABLE, currently: {}'.format(
                 package_name, package['source_name'], new_version,
-                version))
+                package['debian_version']))
         else:
             ready.setdefault('build', set()).add(package_name)
             print('{} {}={} BUILD, currently: {}'.format(
                 package_name, package['source_name'], new_version,
-                version))
+                package['debian_version']))
 
     return ready
 

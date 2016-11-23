@@ -111,6 +111,7 @@ case "$DISTRIBUTION" in
         SBUILD_ARGS+=("--extra-repository=deb http://incoming.debian.org/debian-buildd buildd-unstable main")
         ;;
     *)
+        SBUILD_ARGS+=("--extra-repository=deb http://incoming.debian.org/debian-buildd buildd-unstable main")
         SBUILD_ARGS+=("--extra-repository=$local_repository")
         ;;
 esac

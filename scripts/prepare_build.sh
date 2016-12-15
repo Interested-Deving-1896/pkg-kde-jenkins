@@ -324,7 +324,7 @@ git push --follow-tags
 
 echo "Prepare source package"
 gbp buildpackage "${GBP_ARGS[@]}" \
-    -S -us -uc --changes-option="-DDistribution=$TARGET_DISTRIBUTION"
+    -S -us -uc -d --changes-option="-DDistribution=$TARGET_DISTRIBUTION"
 
 # Push
 git push --follow-tags

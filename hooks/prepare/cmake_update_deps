@@ -607,6 +607,15 @@ class CMakeParser(Parser):
         if not isinstance(var_name, list):
             self.variables[var_name] = value
 
+    def include(self, invocation):
+        filename = self.relative_dirname_join(self.expand(invocation[1]))
+        if not os.path.exists(filename):
+            logging.warn(
+                'File: {} not found, TODO: search sys paths'.format(
+                    filename))
+            return
+        self.run_file(filename)
+
     def find_package(self, invocation):
         # find_package(pkgname [version] [exact] [quiet] [module] [required]
         # [[components] names] [optional_components names])
@@ -689,6 +698,7 @@ class CMakeParser(Parser):
 
         self.known_commands = {
             'add_subdirectory': self.add_subdirectory,
+            'include': self.include,
             'cmake_minimum_required': self.cmake_minimum_required,
             'set': self.cmake_set,
             'find_package': self.find_package,

@@ -17,3 +17,10 @@
 
  * BUG in dbgsym-migration: needs to use << instead of <= if dist !=
    UNRELEASED
+
+ * Follow DEP14,
+   debian/master for the new upstream release branch,
+   debian/unstable for the current version in unstable
+   debian/experimental for the current version in experimental
+   debian/stretch for the changes aimed to stretch
+   debian/stretch-backports for the stretch-backports

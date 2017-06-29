@@ -879,6 +879,7 @@ class ReqToDebianPkg(object):
         'Gettext': {name: 'gettext'},
         'GettextPO': {name: 'libgettextpo-dev'},
         'Git': {name: 'git'},
+        'Gperf': {name: 'gperf'},
         'Gpgme': {name: 'libgpgme11-dev'},
         'Gphoto2': {name: 'libgphoto2-dev'},
         'Grantlee': {name: 'libgrantlee-dev'},

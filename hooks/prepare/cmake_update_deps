@@ -1156,6 +1156,7 @@ class ReqToDebianPkg(object):
         'Qt5GStreamer': {name: 'libqt5gstreamer-dev'},
         'Qt5Gui': {name: 'qtbase5-dev'},
         'Qt5LinguistTools': {name: 'qttools5-dev-tools'},
+        'KF5SyntaxHighlighting': {name: 'libkf5syntaxhighlighting-dev'},
         'Qt5Location': {name: 'qtlocation5-dev'},
         'Qt5Multimedia': {name: 'qtmultimedia5-dev'},
         'Qt5Network': {name: 'qtbase5-dev'},

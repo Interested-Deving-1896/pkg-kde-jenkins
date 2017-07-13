@@ -1337,6 +1337,47 @@ def get_blacklist(package_dir):
     return set(output.split())
 
 
+# Updated version of deb822.PkgRelation.str that handles the 'archqual' field
+def rels2str(rels):
+    """Format to string structured inter-package relationships
+
+    Perform the inverse operation of parse_relations, returning a string
+    suitable to be written in a package stanza.
+    """
+    def pp_arch(arch_spec):
+        return '%s%s' % (
+            '' if arch_spec.enabled else '!',
+            arch_spec.arch,
+        )
+
+    def pp_restrictions(restrictions):
+        s = []
+        for term in restrictions:
+            s.append('%s%s' % (
+                '' if term.enabled else '!',
+                term.profile
+            )
+            )
+        return '<%s>' % ' '.join(s)
+
+    def pp_atomic_dep(dep):
+        s = dep['name']
+        if dep.get('archqual') is not None:
+            s += ':%s' % dep['archqual']
+        if dep.get('version') is not None:
+            s += ' (%s %s)' % dep['version']
+        if dep.get('arch') is not None:
+            s += ' [%s]' % ' '.join(map(pp_arch, dep['arch']))
+        if dep.get('restrictions') is not None:
+            s += ' %s' % ' '.join(map(pp_restrictions, dep['restrictions']))
+        return s
+
+    def pp_or_dep(deps):
+        return ' | '.join(map(pp_atomic_dep, deps))
+
+    return ', '.join(map(pp_or_dep, rels))
+
+
 def update_field(section, field, fun, reqs, blacklist):
     value = section.get(field)
     if not value:
@@ -1344,7 +1385,7 @@ def update_field(section, field, fun, reqs, blacklist):
     rels = deb822.PkgRelation.parse_relations(value)
     changes = fun(rels, reqs, blacklist)
     if changes:
-        section[field] = deb822.PkgRelation.str(rels)
+        section[field] = rels2str(rels)
     return changes
 
 

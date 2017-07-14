@@ -1010,7 +1010,7 @@ class ReqToDebianPkg(object):
         'KF5Plasma': {name: 'libkf5plasma-dev'},
         'KF5PlasmaQuick': {name: 'libkf5plasma-dev'},
         'KF5Plotting': {name: 'libkf5plotting-dev'},
-        'KF5Prison': None,  # Not packaged
+        'KF5Prison': {name: 'libkf5prison-dev'},
         'KF5Pty': {name: 'libkf5pty-dev'},
         'KF5Purpose': None,  # Not packaged
         'KF5Runner': {name: 'libkf5runner-dev'},

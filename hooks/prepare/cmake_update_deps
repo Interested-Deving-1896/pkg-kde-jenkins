@@ -1052,6 +1052,7 @@ class ReqToDebianPkg(object):
         'LibAccountsGlib': {name: 'libaccounts-glib-dev'},
         'LibArchive': {name: 'libarchive-dev'},
         'LibAttica': {name: 'libattica-dev'},
+        'LibFakeKey': {name: 'libfakekey-dev'},
         'LibGcrypt': {name: 'libgcrypt20-dev'},
         'LibGit2': {name: 'libgit2-dev'},
         'LibIcal': {name: 'libical-dev'},
@@ -1258,6 +1259,7 @@ class ReqToDebianPkg(object):
         'XCBXTEST': {name: 'libxcb-xtest0-dev'},
         'XKB': {name: 'libxkbcommon-dev'},
         'XMMS': None,  # version is still around, someone uses it?
+        'XTest': {name: 'libxtst-dev'},
         'Xapian': {name: 'libxapian-dev'},
         'Xplanet': {name: 'xplanet'},
         'Xsltproc': {name: 'xsltproc'},

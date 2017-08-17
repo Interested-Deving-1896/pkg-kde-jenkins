@@ -1488,6 +1488,8 @@ def process_options():
     arg_parser.add_argument('-d', '--package-dir', default='repo')
     arg_parser.add_argument('-u', '--upstream-dir', default='upstream')
     arg_parser.add_argument('--debug', action='store_true')
+    arg_parser.add_argument('--wrap-and-sort-opt', '-w', action='append',
+                            default=[])
     arg_parser.add_argument('cmake_files', nargs='*',
                             default=['CMakeLists.txt'])
     args = arg_parser.parse_args()
@@ -1509,6 +1511,7 @@ def commit(options):
 
     def wrap_and_sort(filename=None):
         cmd = ['wrap-and-sort']
+        cmd += options.wrap_and_sort_opt
         if filename:
             cmd.extend(['-f', filename])
         subprocess.call(cmd, cwd=options.package_dir)

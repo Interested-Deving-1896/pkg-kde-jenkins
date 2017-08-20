@@ -917,7 +917,7 @@ class ReqToDebianPkg(object):
         'KF5AkonadiContact': {name: 'libkf5akonadicontact-dev'},
         'KF5AkonadiMime': {name: 'libkf5akonadimime-dev'},
         'KF5AkonadiNotes': {name: 'libkf5akonadinotes-dev'},
-        'KF5AkonadiSearch': {name: 'libkf5akonadisearch-dev'},
+        'KF5AkonadiSearch': {name: 'libkf5akonadisearch-dev', epoch: 4},
         'KF5AkonadiServer': {name: 'libkf5akonadiserver-dev', epoch: 4},
         'KF5AkonadiSocialUtils': {name: 'libkf5akonadisocialutils-dev'},
         'KF5AlarmCalendar': {name: 'libkf5alarmcalendar-dev'},

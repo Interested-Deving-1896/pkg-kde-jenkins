@@ -1178,6 +1178,8 @@ class ReqToDebianPkg(object):
         'Qt5TextToSpeech': None,  # qtspeech not packaged, uses qt5.5 see github/qtproject/qtspeech
         'Qt5UiTools': {name: 'qttools5-dev'},
         'Qt5WebKit': {name: 'libqt5webkit5-dev'},
+        'Qt5WebEngine': {name: 'qtwebengine5-dev'},
+        'Qt5WebEngineWidgets': {name: 'qtwebengine5-dev'},
         'Qt5WebKitWidgets': {name: 'libqt5webkit5-dev'},
         'Qt5Widgets': {name: 'qtbase5-dev'},
         'Qt5WinExtras': None,  # qt5 windows extras

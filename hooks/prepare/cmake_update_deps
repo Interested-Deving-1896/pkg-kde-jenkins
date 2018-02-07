@@ -646,19 +646,16 @@ class CMakeParser(Parser):
             'NAMES': 4, 'CONFIGS': 4, 'HINTS': 4, 'PATHS': 4,
             'PATH_SUFFIXES': 4,
         }
-        if i < len(invocation):
-            arg = self.expand(invocation[i])
-            logging.debug("Is a version: {} ?".format(arg))
-            if re_version.match(arg):
-                version = Version(arg)
-                i += 1
         state = 0
         while i < len(invocation):
             arg = self.expand(invocation[i])
             # logging.debug(arg)
             i += 1
             if arg not in keywords:
-                if state == 0 or state & 1:
+                if state == 0 and re_version.match(arg):
+                    logging.debug("Is a version: {} ?".format(arg))
+                    version = Version(arg)
+                elif state == 0 or state & 1:
                     components.append(arg)
                 elif state & 2:
                     optional_components.append(arg)

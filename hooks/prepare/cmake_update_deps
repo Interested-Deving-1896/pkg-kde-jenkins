@@ -808,6 +808,7 @@ class ReqToDebianPkg(object):
         # 'LibKGAPI2': {name: 'libkgapi-dev'},
         # 'PythonInterp': None,  # python, python3, python-all, python3-all ?
         # 'PythonInterp': {name: 'python'},
+        # 'PythonInterp': {name: 'python3:any'},
         # 'PythonLibrary': {name: 'python-dev'},
         # 'PythonLibs': {name: 'python-dev'},
         'ACL': {name: 'libacl1-dev'},
@@ -1185,6 +1186,7 @@ class ReqToDebianPkg(object):
         'Qt5QuickWidgets': {name: 'qtdeclarative5-dev'},
         'Qt5Script': {name: 'qtscript5-dev'},
         'Qt5ScriptTools': {name: 'qtscript5-dev'},
+        'Qt5Sensors': {name: 'libqt5sensors5-dev'},
         'Qt5Sql': {name: 'qtbase5-dev'},
         'Qt5Svg': {name: 'libqt5svg5-dev'},
         'Qt5Test': {name: 'qtbase5-dev'},

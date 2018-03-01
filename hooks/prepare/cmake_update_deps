@@ -951,7 +951,7 @@ class ReqToDebianPkg(object):
         'KF5DBusAddons': {name: 'libkf5dbusaddons-dev'},
         'KF5DNSSD': {name: 'libkf5dnssd-dev'},
         'KF5Declarative': {name: 'libkf5declarative-dev'},
-        'KF5DesignerPlugin': {name: 'kdesignerplugin'},
+        'KF5DesignerPlugin': {name: 'kgendesignerplugin'},
         'KF5DocTools': {name: 'libkf5doctools-dev'},
         'KF5Emoticons': {name: 'libkf5emoticons-dev'},
         'KF5EventViews': {name: 'libkf5eventviews-dev', epoch: 4},

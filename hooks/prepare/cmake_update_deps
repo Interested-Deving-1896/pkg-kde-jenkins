@@ -46,6 +46,16 @@ class Dependency(
 
 Version = debian_support.Version
 
+intToExt = {"0": "15.08",
+        "1": "15.12",
+        "2": "16.04",
+        "3": "16.08",
+        "4": "16.12",
+        "5": "17.04",
+        "6": "17.08",
+        "7": "17.12"}
+
+
 
 class Parser(object):
 
@@ -751,7 +761,7 @@ class CMakeParser(Parser):
 @functools.total_ordering
 class DebPackageInfo(object):
 
-    def __init__(self, name, uversion=None, epoch=None, mangler=None):
+    def __init__(self, name, uversion=None, epoch=None, mangler=None, suite=None):
         self.name = name
         self._epoch = epoch
         if uversion is None:
@@ -919,33 +929,33 @@ class ReqToDebianPkg(object):
         'KDevPlatform': {name: 'kdevplatform-dev'},
         'KF5Activities': {name: 'libkf5activities-dev'},
         'KF5ActivitiesStats': {name: 'libkf5activitiesstats-dev'},
-        'KF5Akonadi': {name: 'libkf5akonadi-dev', epoch: 4},
-        'KF5AkonadiCalendar': {name: 'libkf5akonadicalendar-dev', epoch: 4},
-        'KF5AkonadiContact': {name: 'libkf5akonadicontact-dev', epoch: 4},
-        'KF5AkonadiMime': {name: 'libkf5akonadimime-dev', epoch: 4},
-        'KF5AkonadiNotes': {name: 'libkf5akonadinotes-dev', epoch: 4},
-        'KF5AkonadiSearch': {name: 'libkf5akonadisearch-dev', epoch: 4},
-        'KF5AkonadiServer': {name: 'libkf5akonadiserver-dev', epoch: 4},
-        'KF5AkonadiSocialUtils': {name: 'libkf5akonadisocialutils-dev'},
-        'KF5AlarmCalendar': {name: 'libkf5alarmcalendar-dev', epoch: 4},
+        'KF5Akonadi': {name: 'libkf5akonadi-dev', 'suite': 'pim', epoch: 4},
+        'KF5AkonadiCalendar': {name: 'libkf5akonadicalendar-dev', 'suite': 'pim', epoch: 4},
+        'KF5AkonadiContact': {name: 'libkf5akonadicontact-dev', 'suite': 'pim', epoch: 4},
+        'KF5AkonadiMime': {name: 'libkf5akonadimime-dev', 'suite': 'pim', epoch: 4},
+        'KF5AkonadiNotes': {name: 'libkf5akonadinotes-dev', 'suite': 'pim', epoch: 4},
+        'KF5AkonadiSearch': {name: 'libkf5akonadisearch-dev', 'suite': 'pim', epoch: 4},
+        'KF5AkonadiServer': {name: 'libkf5akonadiserver-dev', 'suite': 'pim', epoch: 4},
+        'KF5AkonadiSocialUtils': {name: 'libkf5akonadisocialutils-dev', 'suite': 'pim'},
+        'KF5AlarmCalendar': {name: 'libkf5alarmcalendar-dev', 'suite': 'pim', epoch: 4},
         'KF5Archive': {name: 'libkf5archive-dev'},
         'KF5Attica': {name: 'libkf5attica-dev'},
         'KF5Auth': {name: 'libkf5auth-dev'},
         'KF5Baloo': {name: 'baloo-kf5-dev'},
         'KF5BalooWidgets': {name: 'libkf5baloowidgets-dev', epoch: 4},
-        'KF5Blog': {name: 'libkf5blog-dev'},
+        'KF5Blog': {name: 'libkf5blog-dev', 'suite': 'pim'},
         'KF5BluezQt': {name: 'libkf5bluezqt-dev'},
         'KF5Bookmarks': {name: 'libkf5bookmarks-dev'},
-        'KF5CalendarCore': {name: 'libkf5calendarcore-dev', epoch: 4},
-        'KF5CalendarSupport': {name: 'libkf5calendarsupport-dev', epoch: 4},
-        'KF5CalendarUtils': {name: 'libkf5calendarutils-dev', epoch: 4},
+        'KF5CalendarCore': {name: 'libkf5calendarcore-dev', 'suite': 'pim', epoch: 4},
+        'KF5CalendarSupport': {name: 'libkf5calendarsupport-dev', 'suite': 'pim', epoch: 4},
+        'KF5CalendarUtils': {name: 'libkf5calendarutils-dev', 'suite': 'pim', epoch: 4},
         'KF5Codecs': {name: 'libkf5codecs-dev'},
         'KF5Completion': {name: 'libkf5completion-dev'},
         'KF5ComposerEditorNG': {name: 'libkf5composereditorng-dev'},
         'KF5Config': {name: 'libkf5config-dev'},
         'KF5ConfigWidgets': {name: 'libkf5configwidgets-dev'},
         'KF5ContactEditor': {name: 'libkf5contacteditor-dev', epoch: 4},
-        'KF5Contacts': {name: 'libkf5contacts-dev', epoch: 4},
+        'KF5Contacts': {name: 'libkf5contacts-dev', 'suite': 'pim', epoch: 4},
         'KF5CoreAddons': {name: 'libkf5coreaddons-dev'},
         'KF5Crash': {name: 'libkf5crash-dev'},
         'KF5DBusAddons': {name: 'libkf5dbusaddons-dev'},
@@ -954,22 +964,22 @@ class ReqToDebianPkg(object):
         'KF5DesignerPlugin': {name: 'kgendesignerplugin'},
         'KF5DocTools': {name: 'libkf5doctools-dev'},
         'KF5Emoticons': {name: 'libkf5emoticons-dev'},
-        'KF5EventViews': {name: 'libkf5eventviews-dev', epoch: 4},
+        'KF5EventViews': {name: 'libkf5eventviews-dev', 'suite': 'pim', epoch: 4},
         'KF5FileMetaData': {name: 'libkf5filemetadata-dev'},
-        'KF5FollowupReminder': {name: 'libkf5followupreminder-dev', epoch: 4},
+        'KF5FollowupReminder': {name: 'libkf5followupreminder-dev', 'suite':'pim', epoch: 4},
         'KF5FrameworkIntegration': {name: 'libkf5style-dev'},
         'KF5GlobalAccel': {name: 'libkf5globalaccel-dev'},
         'KF5Gpgmepp': None,  # was: {name: 'libkf5gpgmepp-dev'},
-        'KF5GrantleeTheme': {name: 'libkf5grantleetheme-dev'},
-        'KF5Gravatar': {name: 'libkf5gravatar-dev', epoch: 4},
+        'KF5GrantleeTheme': {name: 'libkf5grantleetheme-dev', 'suite':'pim'},
+        'KF5Gravatar': {name: 'libkf5gravatar-dev', 'suite':'pim', epoch: 4},
         'KF5GuiAddons': {name: 'libkf5guiaddons-dev'},
-        'KF5Holidays': {name: 'libkf5holidays-dev'},
+        'KF5Holidays': {name: 'libkf5holidays-dev', 'suite':'pim'},
         'KF5I18n': {name: 'libkf5i18n-dev'},
-        'KF5IMAP': {name: 'libkf5imap-dev'},
+        'KF5IMAP': {name: 'libkf5imap-dev', 'suite': 'pim'},
         'KF5IconThemes': {name: 'libkf5iconthemes-dev'},
-        'KF5IdentityManagement': {name: 'libkf5identitymanagement-dev'},
+        'KF5IdentityManagement': {name: 'libkf5identitymanagement-dev', 'suite': 'pim'},
         'KF5IdleTime': {name: 'libkf5idletime-dev'},
-        'KF5IncidenceEditor': {name: 'libkf5incidenceeditor-dev'},
+        'KF5IncidenceEditor': {name: 'libkf5incidenceeditor-dev', 'suite': 'pim'},
         'KF5Init': {name: 'kinit-dev'},
         'KF5ItemModels': {name: 'libkf5itemmodels-dev'},
         'KF5ItemViews': {name: 'libkf5itemviews-dev'},
@@ -984,30 +994,30 @@ class ReqToDebianPkg(object):
         'KF5KHtml': {name: 'libkf5khtml-dev'},
         'KF5KIO': {name: 'libkf5kio-dev'},
         'KF5KMahjongglib': {name: 'libkf5kmahjongglib-dev'},
-        'KF5KaddressbookGrantlee': {name: 'libkf5kaddressbookgrantlee-dev', epoch: 4},
-        'KF5KaddressbookImportExport': {name: 'libkf5kaddressbookimportexport-dev', epoch: 4},
-        'KF5KdepimDBusInterfaces': {name: 'libkf5kdepimdbusinterfaces-dev', epoch: 4},
+        'KF5KaddressbookGrantlee': {name: 'libkf5kaddressbookgrantlee-dev', 'suite':'pim', epoch: 4},
+        'KF5KaddressbookImportExport': {name: 'libkf5kaddressbookimportexport-dev', 'suite':'pim', epoch: 4},
+        'KF5KdepimDBusInterfaces': {name: 'libkf5kdepimdbusinterfaces-dev', 'suite':'pim', epoch: 4},
         'KF5Kipi': {name: 'libkf5kipi-dev'},
         'KF5Kirigami2': {name: 'kirigami2-dev'},
-        'KF5KontactInterface': {name: 'libkf5kontactinterface-dev'},
+        'KF5KontactInterface': {name: 'libkf5kontactinterface-dev', 'suite':'pim'},
         'KF5Kross': {name: 'kross-dev'},
-        'KF5Ldap': {name: 'libkf5ldap-dev'},
-        'KF5LibKSieve': {name: 'libkf5ksieve-dev', epoch: 4},
-        'KF5Libkdepim': {name: 'libkf5libkdepim-dev', epoch: 4},
-        'KF5LibkdepimAkonadi': {name: 'libkf5libkdepim-dev', epoch: 4},
-        'KF5Libkleo': {name: 'libkf5libkleo-dev', epoch: 4},
-        'KF5MailCommon': {name: 'libkf5mailcommon-dev', epoch: 4},
-        'KF5MailImporter': {name: 'libkf5mailimporter-dev', epoch: 4},
-        'KF5MailImporterAkonadi': {name: 'libkf5mailimporter-dev', epoch: 4},
-        'KF5MailTransport': {name: 'libkf5mailtransport-dev'},
-        'KF5MailTransportAkonadi': {name: 'libkf5mailtransport-dev'},
-        'KF5Mbox': {name: 'libkf5mbox-dev'},
-        'KF5MessageComposer': {name: 'libkf5messagecomposer-dev', epoch: 4},
-        'KF5MessageCore': {name: 'libkf5messagecore-dev', epoch: 4},
-        'KF5MessageList': {name: 'libkf5messagelist-dev', epoch: 4},
-        'KF5MessageViewer': {name: 'libkf5messageviewer-dev', epoch: 4},
-        'KF5Mime': {name: 'libkf5mime-dev'},
-        'KF5MimeTreeParser': {name: 'libkf5mimetreeparse-dev', epoch: 4},
+        'KF5Ldap': {name: 'libkf5ldap-dev', 'suite':'pim'},
+        'KF5LibKSieve': {name: 'libkf5ksieve-dev', 'suite':'pim', epoch: 4},
+        'KF5Libkdepim': {name: 'libkf5libkdepim-dev', 'suite':'pim', epoch: 4},
+        'KF5LibkdepimAkonadi': {name: 'libkf5libkdepim-dev', 'suite':'pim', epoch: 4},
+        'KF5Libkleo': {name: 'libkf5libkleo-dev', 'suite':'pim', epoch: 4},
+        'KF5MailCommon': {name: 'libkf5mailcommon-dev', 'suite':'pim', epoch: 4},
+        'KF5MailImporter': {name: 'libkf5mailimporter-dev', 'suite':'pim', epoch: 4},
+        'KF5MailImporterAkonadi': {name: 'libkf5mailimporter-dev', 'suite':'pim', epoch: 4},
+        'KF5MailTransport': {name: 'libkf5mailtransport-dev', 'suite':'pim'},
+        'KF5MailTransportAkonadi': {name: 'libkf5mailtransport-dev', 'suite':'pim'},
+        'KF5Mbox': {name: 'libkf5mbox-dev', 'suite':'pim'},
+        'KF5MessageComposer': {name: 'libkf5messagecomposer-dev', 'suite':'pim', epoch: 4},
+        'KF5MessageCore': {name: 'libkf5messagecore-dev', 'suite':'pim', epoch: 4},
+        'KF5MessageList': {name: 'libkf5messagelist-dev', 'suite':'pim', epoch: 4},
+        'KF5MessageViewer': {name: 'libkf5messageviewer-dev', 'suite':'pim', epoch: 4},
+        'KF5Mime': {name: 'libkf5mime-dev', 'suite':'pim'},
+        'KF5MimeTreeParser': {name: 'libkf5mimetreeparse-dev', 'suite':'pim', epoch: 4},
         'KF5ModemManagerQt': {name: 'modemmanager-qt-dev'},
         'KF5NetworkManagerQt': {name: 'libkf5networkmanagerqt-dev'},
         'KF5NewStuff': {name: 'libkf5newstuff-dev'},
@@ -1016,10 +1026,10 @@ class ReqToDebianPkg(object):
         'KF5Package': {name: 'libkf5package-dev'},
         'KF5Parts': {name: 'libkf5parts-dev'},
         'KF5People': {name: 'libkf5people-dev'},
-        'KF5PimCommon': {name: 'libkf5pimcommon-dev', epoch: 4},
-        'KF5PimCommonAkonadi': {name: 'libkf5pimcommon-dev', epoch: 4},
-        'KF5PimIdentities': {name: 'libkf5identitymanagement-dev'},
-        'KF5PimTextEdit': {name: 'libkf5pimtextedit-dev'},
+        'KF5PimCommon': {name: 'libkf5pimcommon-dev', 'suite': 'pim', epoch: 4},
+        'KF5PimCommonAkonadi': {name: 'libkf5pimcommon-dev', 'suite': 'pim', epoch: 4},
+        'KF5PimIdentities': {name: 'libkf5identitymanagement-dev', 'suite': 'pim'},
+        'KF5PimTextEdit': {name: 'libkf5pimtextedit-dev', 'suite': 'pim'},
         'KF5Plasma': {name: 'libkf5plasma-dev'},
         'KF5PlasmaQuick': {name: 'libkf5plasma-dev'},
         'KF5Plotting': {name: 'libkf5plotting-dev'},
@@ -1028,15 +1038,15 @@ class ReqToDebianPkg(object):
         'KF5Purpose': None,  # Not packaged
         'KF5Runner': {name: 'libkf5runner-dev'},
         'KF5Screen': {name: 'libkf5screen-dev', epoch: 4},
-        'KF5SendLater': {name: 'libkf5sendlater-dev', epoch: 4},
+        'KF5SendLater': {name: 'libkf5sendlater-dev', 'suite':'pim', epoch: 4},
         'KF5Service': {name: 'libkf5service-dev'},
         'KF5Solid': {name: 'libkf5solid-dev'},
         'KF5Sonnet': {name: 'libkf5sonnet-dev'},
         'KF5Su': {name: 'libkf5su-dev'},
-        'KF5Syndication': {name: 'libkf5syndication-dev'},
+        'KF5Syndication': {name: 'libkf5syndication-dev', 'suite': 'pim'},
         'KF5SyntaxHighlighting': {name: 'libkf5syntaxhighlighting-dev'},
         'KF5SysGuard': {name: 'libkf5sysguard-dev', epoch: 4},
-        'KF5TemplateParser': {name: 'libkf5templateparser-dev', epoch: 4},
+        'KF5TemplateParser': {name: 'libkf5templateparser-dev', 'suite': 'pim', epoch: 4},
         'KF5TextEditor': {name: 'libkf5texteditor-dev'},
         'KF5TextWidgets': {name: 'libkf5textwidgets-dev'},
         'KF5ThreadWeaver': {name: 'libkf5threadweaver-dev'},
@@ -1044,7 +1054,7 @@ class ReqToDebianPkg(object):
         'KF5UnitConversion': {name: 'libkf5unitconversion-dev'},
         'KF5Wallet': {name: 'libkf5wallet-dev'},
         'KF5Wayland': {name: 'libkf5wayland-dev', epoch: 4},
-        'KF5WebEngineViewer': {name: 'libkf5webengineviewer-dev', epoch: 4},
+        'KF5WebEngineViewer': {name: 'libkf5webengineviewer-dev', 'suite': 'pim', epoch: 4},
         'KF5WebKit': {name: 'libkf5webkit-dev'},
         'KF5WidgetsAddons': {name: 'libkf5widgetsaddons-dev'},
         'KF5WindowSystem': {name: 'libkf5windowsystem-dev'},
@@ -1312,19 +1322,34 @@ class ReqToDebianPkg(object):
             dname = kwargs['name']
 
             if dependency.required:
+                req = dependency.required
+                if 'suite' in kwargs and kwargs['suite'] == "pim":
+                    v = str(req).split(".")
+                    if len(v) < 3:
+                        v.append("0")
+                    elif v[0] == "5":
+                        req = Version(f"{intToExt[v[1]]}.{v[2]}")
                 if ((dname not in needed) or
-                        (dependency.required > needed[dname].uversion)):
-                    kwargs['uversion'] = dependency.required
+                        (req > needed[dname].uversion)):
+                    kwargs['uversion'] = req
                     needed[dname] = DebPackageInfo(**kwargs)
 
             if ((not dependency.required) or
                 (dependency.optional and
                     dependency.optional >= dependency.required)):
-                if dependency.optional:
-                    kwargs['uversion'] = dependency.optional
+
+                req = dependency.optional
+                if 'suite' in kwargs and kwargs['suite'] == "pim":
+                    v = str(req).split(".")
+                    if len(v) < 3:
+                        v.append("0")
+                    elif v[0] == "5":
+                        req = Version(f"{intToExt[v[1]]}.{v[2]}")
+                if req:
+                    kwargs['uversion'] = req
 
                 if ((dname not in optional) or
-                        (dependency.optional > optional[dname].uversion)):
+                        (req > optional[dname].uversion)):
                     optional[dname] = DebPackageInfo(**kwargs)
 
         for name in needed:

@@ -46,15 +46,6 @@ class Dependency(
 
 Version = debian_support.Version
 
-intToExt = {"0": "15.08",
-        "1": "15.12",
-        "2": "16.04",
-        "3": "16.08",
-        "4": "16.12",
-        "5": "17.04",
-        "6": "17.08",
-        "7": "17.12"}
-
 
 
 class Parser(object):
@@ -770,6 +761,7 @@ class DebPackageInfo(object):
         if not mangler:
             mangler = self._mangler
         self.mangler = mangler
+        self.suite = suite
 
     @property
     def epoch(self):
@@ -803,6 +795,23 @@ class DebPackageInfo(object):
         return ((self.name, self.epoch, self.uversion) ==
                 (other.name, other.epoch, self.uversion))
 
+def handlePimSuite(versionString):
+    intToExt = {"0": "15.08",
+                "1": "15.12",
+                "2": "16.04",
+                "3": "16.08",
+                "4": "16.12",
+                "5": "17.04",
+                "6": "17.08",
+                "7": "17.12"}
+    v = str(versionString).split(".")
+    if len(v) < 3:
+        v.append("0")
+
+    if v[0] == "5":
+        return Version(f"{intToExt[v[1]]}.{v[2]}")
+
+    return versionString
 
 class ReqToDebianPkg(object):
 
@@ -812,6 +821,7 @@ class ReqToDebianPkg(object):
 
     name = 'name'
     epoch = 'epoch'
+    suite = 'suite'
     known = {
         # 'KF5GAPI': {name: 'libkf5gapi-dev'},
         # 'KdepimLibs': {name: 'kdepimlibs5-dev', epoch: 4},
@@ -1305,6 +1315,8 @@ class ReqToDebianPkg(object):
         'quazip': {name: 'libquazip-qt5-dev'},
         'telepathy-accounts-signon': {name: 'libsignon-qt5-dev'},
     }
+    suites={"pim": handlePimSuite,
+           }
 
     def process(self, requirements):
         needed = {}
@@ -1323,12 +1335,8 @@ class ReqToDebianPkg(object):
 
             if dependency.required:
                 req = dependency.required
-                if 'suite' in kwargs and kwargs['suite'] == "pim":
-                    v = str(req).split(".")
-                    if len(v) < 3:
-                        v.append("0")
-                    elif v[0] == "5":
-                        req = Version(f"{intToExt[v[1]]}.{v[2]}")
+                if 'suite' in kwargs:
+                    req = self.suites.get(kwargs['suite'], lambda x: x)(req)
                 if ((dname not in needed) or
                         (req > needed[dname].uversion)):
                     kwargs['uversion'] = req
@@ -1339,13 +1347,9 @@ class ReqToDebianPkg(object):
                     dependency.optional >= dependency.required)):
 
                 req = dependency.optional
-                if 'suite' in kwargs and kwargs['suite'] == "pim":
-                    v = str(req).split(".")
-                    if len(v) < 3:
-                        v.append("0")
-                    elif v[0] == "5":
-                        req = Version(f"{intToExt[v[1]]}.{v[2]}")
                 if req:
+                    if 'suite' in kwargs:
+                        req = self.suites.get(kwargs['suite'], lambda x: x)(req)
                     kwargs['uversion'] = req
 
                 if ((dname not in optional) or

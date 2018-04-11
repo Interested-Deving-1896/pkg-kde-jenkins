@@ -1146,7 +1146,7 @@ class ReqToDebianPkg(object):
         'MusicBrainz3': None,  # Dropped in favor of musicbrainz5
         'MusicBrainz5': {name: 'libmusicbrainz5-dev'},
         'NepomukCore': None,  # Trying to get rid of it
-        'NetworkManager': {name: 'network-manager-dev'},
+        'NetworkManager': {name: 'libnm-dev'},
         'Nova': {name: 'libnova-dev'},
         'OpenAL': {name: 'libopenal-dev'},
         'OpenCVcore': {name: 'libopencv-core-dev'},

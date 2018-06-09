@@ -1234,7 +1234,7 @@ class ReqToDebianPkg(object):
         'R': {name: 'r-base-core'},
         'RAW1394': {name: 'libraw1394-dev'},
         'Readline': {name: 'libreadline-dev'},
-        'SCIM': {name: 'scim-dev'},
+        'SCIM': {name: 'libscim-dev'},
         'SIP': {name: 'sip-dev'},
         'SRTP': {name: 'libsrtp0-dev'},
         'SVN': {name: 'libsvn-dev'},

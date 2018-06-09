@@ -319,6 +319,14 @@ def package_relations(binaries, dependencies):
 
 
 def process_dependencies(packages):
+
+    def init_relation(relations, package_name):
+        if package_name not in relations:
+            relations[package_name] = {}
+        if 'reverse_build' not in relations[package_name]:
+            relations[package_name]['reverse_build'] = []
+        return relations[package_name]
+
     binaries = {}
     for package in packages:
         name = package.name
@@ -334,22 +342,16 @@ def process_dependencies(packages):
     relations = {}
     for package in packages:
         build_depends = package.build_depends
-        if package.name not in relations:
-            relations[package.name] = {}
-        if 'reverse_build' not in relations[package.name]:
-            relations[package.name]['reverse_build'] = []
+        relation = init_relation(relations, package.name)
 
-        relations[package.name]['build'] = \
+        relation['build'] = \
             package_relations(binaries, build_depends)
         test_dependencies = package.tests_depends
-        relations[package.name]['test'] = \
+        relation['test'] = \
             package_relations(binaries, test_dependencies)
-        for dependency in relations[package.name]['build']:
-            if dependency not in relations:
-                relations[dependency] = {}
-            if 'reverse_build' not in relations[dependency]:
-                relations[dependency]['reverse_build'] = []
-            relations[dependency]['reverse_build'].append(package.name)
+        for dependency in relation['build']:
+            dep_rel = init_relation(relations, dependency)
+            dep_rel['reverse_build'].append(package.name)
 
     return relations
 

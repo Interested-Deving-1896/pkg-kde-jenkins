@@ -354,7 +354,8 @@ class CMakeParser(Parser):
     def p_arguments(self, p):
         '''arguments : arguments argument_separators argument
                      | argument_separators argument
-                     | argument'''
+                     | argument
+        '''
         aux = [p[len(p) - 1]]
         if len(p) == 4:
             p[0] = p[1] + aux
@@ -363,21 +364,33 @@ class CMakeParser(Parser):
 
     def p_argument_separators(self, p):
         '''argument_separators : argument_separators argument_separator
-                               | argument_separator'''
+                               | argument_separator
+        '''
         p[0] = ''
 
     def p_arguments_separator(self, p):
         '''argument_separator : comment
-                              | WHITE'''
+                              | WHITE
+        '''
         p[0] = ''
 
     def p_argument(self, p):
-        '''argument : argument_parts
-                    | LBRACE arguments_optional RBRACE'''
-        if len(p) == 4:
-            p[0] = [p[2]]
+        '''argument : argument_parts_optional LBRACE arguments_optional RBRACE
+                    | argument_parts
+        '''
+        if len(p) == 5:
+            p[0] = [p[1], p[2]]
         else:
             p[0] = p[1][0] if len(p[1]) == 1 else p[1]
+
+    def p_argument_parts_optional(self, p):
+        '''argument_parts_optional : argument_parts
+                                   | empty'''
+
+        if p[1]:
+            p[0] = p[1]
+        else:
+            p[0] = []
 
     def p_argument_parts(self, p):
         '''argument_parts : argument_parts argument_part

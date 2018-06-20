@@ -1003,7 +1003,7 @@ class ReqToDebianPkg(object):
         'KF5GrantleeTheme': {name: 'libkf5grantleetheme-dev', suite: 'pim'},
         'KF5Gravatar': {name: 'libkf5gravatar-dev', suite: 'pim', epoch: 4},
         'KF5GuiAddons': {name: 'libkf5guiaddons-dev'},
-        'KF5Holidays': {name: 'libkf5holidays-dev', suite: 'pim'},
+        'KF5Holidays': {name: 'libkf5holidays-dev', epoch: 1},
         'KF5I18n': {name: 'libkf5i18n-dev'},
         'KF5IMAP': {name: 'libkf5imap-dev', suite: 'pim'},
         'KF5IconThemes': {name: 'libkf5iconthemes-dev'},
@@ -1351,6 +1351,7 @@ class ReqToDebianPkg(object):
             elif kwargs is None:
                 # Not in Debian
                 continue
+            logging.debug("Processing %s: %s", name, dependency)
 
             dname = kwargs['name']
 

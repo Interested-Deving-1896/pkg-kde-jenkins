@@ -911,6 +911,7 @@ class ReqToDebianPkg(object):
         'FFmpegAVCODEC': {name: 'libavcodec-dev'},
         'FFmpegAVFORMAT': {name: 'libavformat-dev'},
         'FFmpegSWSCALE': {name: 'libswscale-dev'},
+        'FFmpegAVUTIL': {name: 'libswscale-dev', 'mangler': lambda v: ''},
         'FLEX': {name: 'flex'},
         'Fontconfig': {name: 'libfontconfig1-dev'},
         'Freetype': {name: 'libfreetype6-dev'},
@@ -1117,6 +1118,7 @@ class ReqToDebianPkg(object):
         'LibAccountsGlib': {name: 'libaccounts-glib-dev'},
         'LibArchive': {name: 'libarchive-dev'},
         'LibAttica': {name: 'libattica-dev'},
+        'LibExiv2': {name: 'libexiv2-dev'},
         'LibFakeKey': {name: 'libfakekey-dev'},
         'LibGcrypt': {name: 'libgcrypt20-dev'},
         'LibGit2': {name: 'libgit2-dev'},
@@ -1333,6 +1335,7 @@ class ReqToDebianPkg(object):
         'XMMS': None,  # version is still around, someone uses it?
         'XTest': {name: 'libxtst-dev'},
         'Xapian': {name: 'libxapian-dev'},
+        'Xattr': {name: 'libattr1-dev'},
         'Xplanet': {name: 'xplanet'},
         'Xsltproc': {name: 'xsltproc'},
         'ZLIB': {name: 'zlib1g-dev'},
@@ -1340,6 +1343,7 @@ class ReqToDebianPkg(object):
         'dbusmenu-qt5': {name: 'libdbusmenu-qt5-dev'},
         'epoxy': {name: 'libepoxy-dev'},
         'gbm': {name: 'libgbm-dev'},
+        'libappimage': {name: 'libappimage-dev'},
         'libgps': {name: 'libgps-dev'},
         'libhybris': None,  # Not packaged yet
         'liblocation': None,  # Not packaged yet

@@ -1202,6 +1202,7 @@ class ReqToDebianPkg(object):
         'Protobuf': {name: 'libprotobuf-dev'},
         'PulseAudio': {name: 'libpulse-dev'},
         'PyQt4': None,  # Done with qt4
+        'PythonCairo': {name: 'python3-cairo'},
         'PythonLibs3': {name: 'python3-dev'},
         'QAccessibilityClient': {name: 'libqaccessibilityclient-dev'},
         'QApt': {name: 'libqapt-dev'},
@@ -1270,6 +1271,7 @@ class ReqToDebianPkg(object):
         'Samba': {name: 'libsmbclient-dev'},
         'Sane': {name: 'sane-dev'},
         'Sasl2': {name: 'libsasl2-dev'},
+        'Sass': {name: 'sassc'},
         'ScreenSaverDBusInterface': {name: 'plasma-workspace-dev', epoch: 4},
         'Sensors': {name: 'libsensors4-dev'},
         'SharedDesktopOntologies': {name: 'shared-desktop-ontologies'},

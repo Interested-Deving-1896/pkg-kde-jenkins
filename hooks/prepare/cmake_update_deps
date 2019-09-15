@@ -862,6 +862,7 @@ class ReqToDebianPkg(object):
         'Akonadi': {name: 'libakonadi-dev'},
         'Alsa': {name: 'libasound2-dev'},
         'Analitza5': {name: 'libanalitza-dev'},
+        'AppStreamQt': {name: 'libappstreamqt-dev'},
         'AppstreamQt': {name: 'libappstreamqt-dev'},
         'AstrometryNet': {name: 'astrometry.net'},
         'Automoc4': None,  # No longer needed
@@ -1274,6 +1275,7 @@ class ReqToDebianPkg(object):
         'Sasl2': {name: 'libsasl2-dev'},
         'Sass': {name: 'sassc'},
         'ScreenSaverDBusInterface': {name: 'plasma-workspace-dev', epoch: 4},
+        'Seccomp': {name: 'libseccomp-dev'},
         'Sensors': {name: 'libsensors4-dev'},
         'SharedDesktopOntologies': {name: 'shared-desktop-ontologies'},
         'SharedMimeInfo': {name: 'shared-mime-info'},

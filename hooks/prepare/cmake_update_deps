@@ -934,6 +934,7 @@ class ReqToDebianPkg(object):
         'Gphoto2': {name: 'libgphoto2-dev'},
         'Grantlee': {name: 'libgrantlee-dev'},
         'Grantlee5': {name: 'libgrantlee5-dev'},
+        'GSettingSchemas': {name: 'gsettings-desktop-schemas'},
         'HSPELL': {name: 'hspell'},
         'HUNSPELL': {name: 'libhunspell-dev'},
         'HUpnp': {name: 'libhupnp-dev'},

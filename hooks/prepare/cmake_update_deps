@@ -1085,7 +1085,7 @@ class ReqToDebianPkg(object):
         'KF5Solid': {name: 'libkf5solid-dev'},
         'KF5Sonnet': {name: 'libkf5sonnet-dev'},
         'KF5Su': {name: 'libkf5su-dev'},
-        'KF5Syndication': {name: 'libkf5syndication-dev', suite: 'pim'},
+        'KF5Syndication': {name: 'libkf5syndication-dev', epoch: 1},
         'KF5SyntaxHighlighting': {name: 'libkf5syntaxhighlighting-dev'},
         'KF5SysGuard': {name: 'libkf5sysguard-dev', epoch: 4},
         'KF5TemplateParser': {name: 'libkf5templateparser-dev', suite: 'pim', epoch: 4},

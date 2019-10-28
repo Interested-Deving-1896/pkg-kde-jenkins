@@ -1243,6 +1243,7 @@ class ReqToDebianPkg(object):
         'Qt5Keychain': {name: 'qt5keychain-dev'},
         'Qt5Multimedia': {name: 'qtmultimedia5-dev'},
         'Qt5Network': {name: 'qtbase5-dev'},
+        'Qt5NetworkAuth': {name: 'libqt5networkauth5-dev'},
         'Qt5OpenGL': {name: 'libqt5opengl5-dev'},
         'Qt5PlatformSupport': {name: 'qtbase5-private-dev'},
         'Qt5Positioning': {name: 'qtpositioning5-dev'},

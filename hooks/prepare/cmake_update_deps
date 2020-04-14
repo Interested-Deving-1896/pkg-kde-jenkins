@@ -1261,6 +1261,8 @@ class ReqToDebianPkg(object):
         'Qt5Test': {name: 'qtbase5-dev'},
         'Qt5TextToSpeech': None,  # qtspeech not packaged, uses qt5.5 see github/qtproject/qtspeech
         'Qt5UiTools': {name: 'qttools5-dev'},
+        'Qt5WaylandClient': {name: 'libqt5waylandclient5-dev'},
+        'QtWaylandScanner': {name: 'qtwayland5-dev-tools'},
         'Qt5WebEngine': {name: 'qtwebengine5-dev'},
         'Qt5WebEngineWidgets': {name: 'qtwebengine5-dev'},
         'Qt5WebKit': {name: 'libqt5webkit5-dev'},

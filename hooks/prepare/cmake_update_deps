@@ -1359,6 +1359,7 @@ class ReqToDebianPkg(object):
         'Xplanet': {name: 'xplanet'},
         'Xsltproc': {name: 'xsltproc'},
         'ZLIB': {name: 'zlib1g-dev'},
+        'ZXing': {name: 'libzxingcore-dev'},
         'cmake': {name: 'cmake'},
         'dbusmenu-qt5': {name: 'libdbusmenu-qt5-dev'},
         'epoxy': {name: 'libepoxy-dev'},

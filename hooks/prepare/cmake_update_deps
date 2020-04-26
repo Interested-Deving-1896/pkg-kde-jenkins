@@ -1082,6 +1082,7 @@ class ReqToDebianPkg(object):
         'KF5Screen': {name: 'libkf5screen-dev', epoch: 4},
         'KF5SendLater': {name: 'libkf5sendlater-dev', suite: 'pim', epoch: 4},
         'KF5Service': {name: 'libkf5service-dev'},
+        'KF5DAV': {name: 'libkf5dav-dev', suite: 'pim'},
         'KF5Solid': {name: 'libkf5solid-dev'},
         'KF5Sonnet': {name: 'libkf5sonnet-dev'},
         'KF5Su': {name: 'libkf5su-dev'},

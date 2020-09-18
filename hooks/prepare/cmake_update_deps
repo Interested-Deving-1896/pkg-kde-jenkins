@@ -672,6 +672,8 @@ class CMakeParser(Parser):
                 if state == 0 and re_version.match(arg):
                     logging.debug('Is a version: {} ?'.format(arg))
                     version = Version(arg)
+                elif state == 0 and part == ('VAR', 'KF5_MIN_VERSION'):
+                    version = "KF5_MIN_VERSION"
                 elif state == 0 or state & 1:
                     components.append(arg)
                 elif state & 2:
@@ -1388,6 +1390,7 @@ class ReqToDebianPkg(object):
         needed = {}
         optional = {}
         not_found = {}
+        ecm_version = None
         for name, dependency in requirements.items():
             kwargs = self.known.get(name, not_found)
             if kwargs is not_found:
@@ -1423,10 +1426,18 @@ class ReqToDebianPkg(object):
                         (req > optional[dname].uversion)):
                     optional[dname] = DebPackageInfo(**kwargs)
 
+            if kwargs['name'] == 'extra-cmake-modules':
+                ecm_version = kwargs['uversion']
+
         for name in needed:
             if name in optional and \
                needed[name].uversion >= optional[name].uversion:
                 del optional[name]
+
+        if ecm_version:
+            for dep in itertools.chain(needed.values(), optional.values()):
+                if dep.uversion == "KF5_MIN_VERSION":
+                    dep.uversion = ecm_version
 
         if not_found:
             print('Not known packages:')

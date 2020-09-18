@@ -593,7 +593,7 @@ class CMakeParser(Parser):
         subdir = self.expand(invocation[1])
         filename = self.relative_dirname_join(subdir, 'CMakeLists.txt')
         if not os.path.exists(filename):
-            logging.warn(
+            logging.warning(
                 'File: {} not found, cmake project incomplete?'.format(
                     filename))
             return
@@ -625,7 +625,7 @@ class CMakeParser(Parser):
     def include(self, invocation):
         filename = self.relative_dirname_join(self.expand(invocation[1]))
         if not os.path.exists(filename):
-            logging.warn(
+            logging.warning(
                 'File: {} not found, TODO: search sys paths'.format(
                     filename))
             return
@@ -1646,7 +1646,7 @@ def main():
     for cmake_file in options.cmake_files:
         full_path = os.path.join(options.upstream_dir, cmake_file)
         if not os.path.exists(full_path):
-            logging.warn(
+            logging.warning(
                 'File: {} not found, not cmake based project?'.format(
                     full_path))
             continue

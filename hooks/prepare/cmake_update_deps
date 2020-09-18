@@ -663,10 +663,11 @@ class CMakeParser(Parser):
             'PATH_SUFFIXES': 4,
         }
         state = 0
-        while i < len(invocation):
-            arg = self.expand(invocation[i])
+        for i, part in enumerate(invocation[2:],2):
+            arg = self.expand(part)
+            # logging.debug(i)
+            # logging.debug(part)
             # logging.debug(arg)
-            i += 1
             if arg not in keywords:
                 if state == 0 and re_version.match(arg):
                     logging.debug('Is a version: {} ?'.format(arg))

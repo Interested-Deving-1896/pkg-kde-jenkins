@@ -625,9 +625,10 @@ class CMakeParser(Parser):
     def include(self, invocation):
         filename = self.relative_dirname_join(self.expand(invocation[1]))
         if not os.path.exists(filename):
-            logging.warning(
-                'File: {} not found, TODO: search sys paths'.format(
-                    filename))
+            if invocation[1] not in ('ECMGeneratePriFile', 'ECMSetupVersion', 'KDEInstallDirs', 'KDECMakeSettings', 'KDEFrameworkCompilerSettings', 'ECMGenerateHeaders', 'ECMQtDeclareLoggingCategory', 'ECMAddQch', 'ECMMarkNonGuiExecutable'):
+                logging.warning(
+                    'File: {} not found, TODO: search sys paths'.format(
+                        filename))
             return
         self.run_file(filename)
 

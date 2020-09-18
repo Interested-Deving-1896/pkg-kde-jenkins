@@ -31,7 +31,9 @@ import re
 import shutil
 import subprocess
 import tempfile
+import warnings
 
+warnings.filterwarnings("ignore", category=UserWarning, message="cannot parse package relationship")
 
 re_keyword = re.compile('^[A-Z_]+$')
 

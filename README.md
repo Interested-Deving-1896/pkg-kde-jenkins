@@ -10,7 +10,25 @@ _Description pending._
 ## Architecture
 
 <!-- AI:start:architecture -->
-_Architecture documentation pending._
+This project automates Jenkins job generation for KDE packages. It uses Python scripts and XML templates to define and manage Jenkins job configurations. The key components include `jjb-builder.py` for generating Jenkins Job Builder (JJB) configurations, `ecm_simple.xml` as a base XML template, and the `jobs` directory for job definitions. Supporting scripts and utilities are in the `scripts` and `hooks` directories. The `tools.py` module provides shared functionality. The repository structure is as follows:
+
+```plaintext
+.
+├── .gitignore
+├── COPYING
+├── README.md
+├── TODO
+├── attic/               # Deprecated or archived files
+├── ecm_simple.xml       # Base XML template for Jenkins jobs
+├── frameworks/          # Framework-specific configurations
+├── generate.sh          # Shell script for job generation
+├── hooks/               # Hook scripts for automation
+├── jjb-builder.py       # Main script for JJB configuration generation
+├── jobs/                # Job definitions
+├── scripts/             # Utility scripts
+├── test.sh              # Test script for validation
+├── tools.py             # Shared Python utilities
+```
 <!-- AI:end:architecture -->
 
 ## Install

@@ -71,7 +71,12 @@ Direct commits to OSP or OOC are detected and opened as PRs back to `Interested-
 ## Contributors
 
 <!-- AI:start:contributors -->
-_Contributors pending._
+[@maxyz](https://github.com/maxyz) - 340 commits  
+[@hefee](https://github.com/hefee) - 24 commits  
+[@Interested-Deving-1896](https://github.com/Interested-Deving-1896) - 8 commits  
+[@marga-personal](https://github.com/marga-personal) - 2 commits  
+
+*Note: This repository is a mirror. Please refer to the upstream source for additional contributions.*
 <!-- AI:end:contributors -->
 
 ## Origins

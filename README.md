@@ -51,7 +51,15 @@ cd pkg-kde-jenkins
 ## CI
 
 <!-- AI:start:ci -->
-_CI documentation pending._
+The repository uses GitHub Actions for continuous integration. The following workflows are defined:
+
+1. **`ci.yml`**: Runs tests and linting for the project. It executes `test.sh` and checks Python code style using `flake8`. No secrets are required.
+
+2. **`deploy.yml`**: Builds and deploys Jenkins job configurations. It uses `jjb-builder.py` to generate configurations and deploys them to a Jenkins instance. Requires the `JENKINS_URL`, `JENKINS_USER`, and `JENKINS_API_TOKEN` secrets.
+
+3. **`generate-jobs.yml`**: Generates Jenkins job XML files using `generate.sh` and validates them. No secrets are required.
+
+Ensure required secrets are configured in the repository settings before running workflows.
 <!-- AI:end:ci -->
 
 ## Mirror chain

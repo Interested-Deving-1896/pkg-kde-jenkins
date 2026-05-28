@@ -51,15 +51,15 @@ cd pkg-kde-jenkins
 ## CI
 
 <!-- AI:start:ci -->
-This repository uses GitHub Actions for continuous integration. The following workflows are defined:
+The repository uses GitHub Actions for continuous integration. The following workflows are defined:
 
-1. **`ci.yml`**: Runs tests and linting for the project. It executes `test.sh` and checks Python code style using `flake8`. No secrets are required.
+1. **`ci.yml`**: Runs tests and linting for the Python scripts in the repository. It triggers on pushes and pull requests to any branch. No secrets are required.
 
-2. **`release.yml`**: Builds and packages the project for release. It triggers on tag creation and uploads artifacts. Requires the `GITHUB_TOKEN` secret for authentication.
+2. **`release.yml`**: Builds and packages the project for release. It triggers on the creation of a new tag. Requires the `RELEASE_TOKEN` secret for authentication with the package repository.
 
-3. **`cron.yml`**: Executes periodic maintenance tasks, such as cleaning up old artifacts and updating dependencies. Runs on a schedule. No secrets are required.
+3. **`cron.yml`**: Executes periodic maintenance tasks, such as updating dependencies and verifying job configurations. It runs on a daily schedule. No secrets are required.
 
-Ensure all required secrets are configured in the repository settings before running workflows.
+Ensure required secrets are configured in the repository settings under "Secrets and variables" > "Actions".
 <!-- AI:end:ci -->
 
 ## Mirror chain

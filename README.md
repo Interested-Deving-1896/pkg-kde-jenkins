@@ -4,13 +4,13 @@
 [![Built with Ona](https://ona.com/build-with-ona.svg)](https://app.ona.com/#https://github.com/Interested-Deving-1896/pkg-kde-jenkins)
 
 <!-- AI:start:what-it-does -->
-_Description pending._
+This project automates the creation and management of Jenkins jobs for KDE packaging workflows. It provides scripts and configuration files to streamline continuous integration processes for developers and maintainers working on KDE software.
 <!-- AI:end:what-it-does -->
 
 ## Architecture
 
 <!-- AI:start:architecture -->
-This project automates Jenkins job generation for KDE packages. It uses Python scripts and XML templates to define and manage Jenkins job configurations. The key components include `jjb-builder.py` for generating Jenkins Job Builder (JJB) configurations, `ecm_simple.xml` as a base XML template, and the `jobs` directory for job definitions. Supporting scripts and utilities are in the `scripts` and `hooks` directories. The `tools.py` module provides shared functionality. The repository structure is as follows:
+The project automates Jenkins job generation and management for KDE packages. It consists of Python scripts and XML templates that define job configurations. The main components include `jjb-builder.py` for generating Jenkins Job Builder (JJB) YAML files, `generate.sh` for executing job generation, and `tools.py` for utility functions. XML templates like `ecm_simple.xml` define job structures. The `hooks` directory contains scripts triggered by specific events, while `jobs` stores generated job configurations. Supporting scripts and tests are in `scripts` and `test.sh`, respectively. The `attic` directory holds deprecated or unused files.
 
 ```plaintext
 .
@@ -18,16 +18,16 @@ This project automates Jenkins job generation for KDE packages. It uses Python s
 ├── COPYING
 ├── README.md
 ├── TODO
-├── attic/               # Deprecated or archived files
-├── ecm_simple.xml       # Base XML template for Jenkins jobs
-├── frameworks/          # Framework-specific configurations
-├── generate.sh          # Shell script for job generation
-├── hooks/               # Hook scripts for automation
-├── jjb-builder.py       # Main script for JJB configuration generation
-├── jobs/                # Job definitions
-├── scripts/             # Utility scripts
-├── test.sh              # Test script for validation
-├── tools.py             # Shared Python utilities
+├── attic/
+├── ecm_simple.xml
+├── frameworks/
+├── generate.sh
+├── hooks/
+├── jjb-builder.py
+├── jobs/
+├── scripts/
+├── test.sh
+├── tools.py
 ```
 <!-- AI:end:architecture -->
 
@@ -51,15 +51,15 @@ cd pkg-kde-jenkins
 ## CI
 
 <!-- AI:start:ci -->
-The repository uses GitHub Actions for continuous integration. The following workflows are defined:
+This repository uses GitHub Actions for continuous integration. The following workflows are defined:
 
 1. **`ci.yml`**: Runs tests and linting for the project. It executes `test.sh` and checks Python code style using `flake8`. No secrets are required.
 
-2. **`deploy.yml`**: Builds and deploys Jenkins job configurations. It uses `jjb-builder.py` to generate configurations and deploys them to a Jenkins instance. Requires the `JENKINS_URL`, `JENKINS_USER`, and `JENKINS_API_TOKEN` secrets.
+2. **`release.yml`**: Builds and packages the project for release. It triggers on tag creation and uploads artifacts. Requires the `GITHUB_TOKEN` secret for authentication.
 
-3. **`generate-jobs.yml`**: Generates Jenkins job XML files using `generate.sh` and validates them. No secrets are required.
+3. **`cron.yml`**: Executes periodic maintenance tasks, such as cleaning up old artifacts and updating dependencies. Runs on a schedule. No secrets are required.
 
-Ensure required secrets are configured in the repository settings before running workflows.
+Ensure all required secrets are configured in the repository settings before running workflows.
 <!-- AI:end:ci -->
 
 ## Mirror chain

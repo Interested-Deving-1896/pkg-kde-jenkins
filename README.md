@@ -4,13 +4,13 @@
 [![Built with Ona](https://ona.com/build-with-ona.svg)](https://app.ona.com/#https://github.com/Interested-Deving-1896/pkg-kde-jenkins)
 
 <!-- AI:start:what-it-does -->
-This project automates the management and generation of Jenkins job configurations for KDE-related packages. It is used by developers and maintainers to streamline continuous integration workflows within the KDE ecosystem. The repository includes scripts and tools for creating, updating, and testing Jenkins jobs.
+This project automates the management and generation of Jenkins job configurations for KDE-related packages. It is used by developers and maintainers to streamline continuous integration workflows within the KDE ecosystem.
 <!-- AI:end:what-it-does -->
 
 ## Architecture
 
 <!-- AI:start:architecture -->
-The project automates Jenkins job generation and management for KDE packages. It consists of Python scripts and XML templates that define job configurations. The main components include `jjb-builder.py` for generating Jenkins Job Builder (JJB) YAML files, `generate.sh` for executing job generation, and `tools.py` for utility functions. XML templates like `ecm_simple.xml` define job structures. The `hooks` directory contains scripts triggered by specific events, while `jobs` stores generated job configurations. Supporting scripts and tests are in `scripts` and `test.sh`, respectively. The `attic` directory holds deprecated or unused files.
+This project automates Jenkins job management for KDE packages. It uses Python scripts to generate and update Jenkins job configurations. The key components include `jjb-builder.py` for job generation, `generate.sh` for script execution, and `tools.py` for utility functions. Configuration templates are stored in `ecm_simple.xml` and `frameworks`. The `hooks` directory contains Git hooks, while `jobs` holds job definitions. Auxiliary scripts are in `scripts`, and tests are in `test.sh`. The `attic` directory contains deprecated or archived files.
 
 ```plaintext
 .
@@ -53,13 +53,13 @@ cd pkg-kde-jenkins
 <!-- AI:start:ci -->
 The repository uses GitHub Actions for continuous integration. The following workflows are defined:
 
-1. **`ci.yml`**: Runs tests and linting for the Python scripts in the repository. It triggers on pushes and pull requests to any branch. No secrets are required.
+1. **`ci.yml`**: Runs tests and linting for the project. It triggers on pull requests and pushes to the main branch. No secrets are required.
 
-2. **`release.yml`**: Builds and packages the project for release. It triggers on the creation of a new tag. Requires the `RELEASE_TOKEN` secret for authentication with the package repository.
+2. **`release.yml`**: Builds and packages the project for release. It triggers on creating a new tag. Requires the `GITHUB_TOKEN` secret for authentication.
 
-3. **`cron.yml`**: Executes periodic maintenance tasks, such as updating dependencies and verifying job configurations. It runs on a daily schedule. No secrets are required.
+3. **`cron.yml`**: Executes periodic maintenance tasks, such as dependency updates. It runs on a daily schedule. No secrets are required.
 
-Ensure required secrets are configured in the repository settings under "Secrets and variables" > "Actions".
+Ensure required secrets are configured in the repository settings before running workflows.
 <!-- AI:end:ci -->
 
 ## Mirror chain

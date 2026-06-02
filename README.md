@@ -4,7 +4,7 @@
 [![Built with Ona](https://ona.com/build-with-ona.svg)](https://app.ona.com/#https://github.com/Interested-Deving-1896/pkg-kde-jenkins)
 
 <!-- AI:start:what-it-does -->
-This project automates the management and generation of Jenkins job configurations for KDE-related packages. It is used by developers and maintainers to streamline continuous integration workflows within the KDE ecosystem.
+This project provides tools and scripts for managing Jenkins jobs related to KDE packaging and development workflows. It automates the creation, configuration, and maintenance of Jenkins job definitions, streamlining CI/CD processes for KDE developers and maintainers.
 <!-- AI:end:what-it-does -->
 
 ## Architecture
@@ -80,11 +80,11 @@ Direct commits to OSP or OOC are detected and opened as PRs back to `Interested-
 
 <!-- AI:start:contributors -->
 [@maxyz](https://github.com/maxyz) - 340 commits  
+[@Interested-Deving-1896](https://github.com/Interested-Deving-1896) - 26 commits  
 [@hefee](https://github.com/hefee) - 24 commits  
-[@Interested-Deving-1896](https://github.com/Interested-Deving-1896) - 8 commits  
 [@marga-personal](https://github.com/marga-personal) - 2 commits  
 
-*Note: This repository is a mirror. Please refer to the upstream source for additional contributions.*
+*Note: This repository is a mirror. Please refer to the upstream source for additional contributions and information.*
 <!-- AI:end:contributors -->
 
 ## Origins

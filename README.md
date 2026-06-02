@@ -4,7 +4,7 @@
 [![Built with Ona](https://ona.com/build-with-ona.svg)](https://app.ona.com/#https://github.com/Interested-Deving-1896/pkg-kde-jenkins)
 
 <!-- AI:start:what-it-does -->
-This project provides tools and scripts for managing Jenkins jobs related to KDE packaging and development workflows. It automates the creation, configuration, and maintenance of Jenkins job definitions, streamlining CI/CD processes for KDE developers and maintainers.
+This project provides automation tools for building and managing KDE packages using Jenkins. It is used by developers and maintainers to streamline the continuous integration and delivery process for KDE software.
 <!-- AI:end:what-it-does -->
 
 ## Architecture

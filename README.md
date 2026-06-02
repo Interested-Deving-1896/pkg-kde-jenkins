@@ -1,4 +1,3 @@
-[update-readmes]   Mode: rewrite — migrating to template structure...
 # pkg-kde-jenkins
 
 [![Built with Ona](https://ona.com/build-with-ona.svg)](https://app.ona.com/#https://github.com/Interested-Deving-1896/pkg-kde-jenkins)

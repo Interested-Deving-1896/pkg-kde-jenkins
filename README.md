@@ -89,7 +89,7 @@ Direct commits to OSP or OOC are detected and opened as PRs back to `Interested-
 ## Origins
 
 <!-- AI:start:origins -->
-_No dependency graph found. Run `generate-dep-graph.yml` to generate `dep-graph/origins.md`._
+_Original project — no upstream fork._
 <!-- AI:end:origins -->
 
 ## Resources

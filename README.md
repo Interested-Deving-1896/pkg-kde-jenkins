@@ -3,7 +3,7 @@
 [![Built with Ona](https://ona.com/build-with-ona.svg)](https://app.ona.com/#https://github.com/Interested-Deving-1896/pkg-kde-jenkins)
 
 <!-- AI:start:what-it-does -->
-This project provides tools and scripts for managing Jenkins jobs related to KDE packaging workflows. It automates the creation, configuration, and maintenance of Jenkins pipelines, streamlining CI/CD processes for developers and maintainers in the KDE ecosystem.
+This project automates the generation and management of Jenkins job configurations for KDE-related packages. It is used by developers and maintainers to streamline continuous integration workflows within the KDE ecosystem. The repository includes scripts and tools for creating, updating, and testing Jenkins jobs.
 <!-- AI:end:what-it-does -->
 
 ## Architecture
@@ -95,7 +95,7 @@ Direct commits to OSP or OOC are detected and opened as PRs back to `Interested-
 ## Origins
 
 <!-- AI:start:origins -->
-_Original project — no upstream fork._
+_No dependency graph found. Run `generate-dep-graph.yml` to generate `dep-graph/origins.md`._
 <!-- AI:end:origins -->
 
 ## Resources

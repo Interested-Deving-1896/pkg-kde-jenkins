@@ -3,30 +3,30 @@
 [![Built with Ona](https://ona.com/build-with-ona.svg)](https://app.ona.com/#https://github.com/Interested-Deving-1896/pkg-kde-jenkins)
 
 <!-- AI:start:what-it-does -->
-This project automates the generation and management of Jenkins job configurations for KDE-related packages. It is used by developers and maintainers to streamline continuous integration workflows within the KDE ecosystem. The repository includes scripts and tools for creating, updating, and testing Jenkins jobs.
+This project provides automation tools for managing Jenkins jobs related to KDE packaging. It simplifies the creation, configuration, and maintenance of CI/CD pipelines for developers and maintainers working on KDE projects.
 <!-- AI:end:what-it-does -->
 
 ## Architecture
 
 <!-- AI:start:architecture -->
-This project automates Jenkins job management for KDE packaging workflows. It uses Python scripts and XML templates to define and generate Jenkins job configurations. Key components include `jjb-builder.py` for job generation, `ecm_simple.xml` as a base XML template, and the `jobs` directory for job definitions. Supporting scripts in `scripts` and `hooks` handle auxiliary tasks. The `tools.py` module provides shared utilities. The `generate.sh` script automates the generation process, while `test.sh` is used for testing.
+The project is a Python-based infrastructure for managing Jenkins job configurations, primarily focused on KDE packages. Key components include `jjb-builder.py`, which generates Jenkins Job Builder (JJB) YAML files, and `tools.py`, which provides utility functions for job management. The `generate.sh` script automates job generation workflows. The `hooks` directory contains scripts triggered during specific events, while `jobs` holds predefined job templates. Supporting scripts are located in the `scripts` directory. The `ecm_simple.xml` file defines XML-based configurations for Extra CMake Modules. The `attic` directory stores deprecated or experimental files.
 
-Directory structure:
 ```plaintext
 .
-├── attic/             # Deprecated or archived files
-├── hooks/             # Hook scripts for integration
-├── jobs/              # Jenkins job definitions
-├── scripts/           # Helper scripts for automation
-├── .gitignore         # Git ignore rules
-├── COPYING            # License information
-├── README.md          # Project documentation
-├── TODO               # Pending tasks
-├── ecm_simple.xml     # Base XML template for jobs
-├── generate.sh        # Script to generate job configurations
-├── jjb-builder.py     # Main script for Jenkins job generation
-├── test.sh            # Test script
-├── tools.py           # Shared utility functions
+├── .gitignore
+├── COPYING
+├── README.md
+├── TODO
+├── attic/
+├── ecm_simple.xml
+├── frameworks/
+├── generate.sh
+├── hooks/
+├── jjb-builder.py
+├── jobs/
+├── scripts/
+├── test.sh
+├── tools.py
 ```
 <!-- AI:end:architecture -->
 
@@ -50,21 +50,11 @@ cd pkg-kde-jenkins
 ## CI
 
 <!-- AI:start:ci -->
-The repository uses GitHub Actions for continuous integration. The following workflows are defined:
-
-1. **`ci.yml`**: Runs linting and unit tests for the Python scripts in the repository.  
-   - Triggers: `push` and `pull_request` events.  
-   - Required secrets: None.
-
-2. **`deploy.yml`**: Handles deployment of Jenkins job configurations to the target environment.  
-   - Triggers: Manual dispatch (`workflow_dispatch`).  
-   - Required secrets: `DEPLOY_TOKEN` (authentication token for deployment).
-
-3. **`test-scripts.yml`**: Executes integration tests for the scripts in the `scripts` directory.  
-   - Triggers: `push` events to the `main` branch.  
-   - Required secrets: None.
-
-Ensure required secrets are configured in the repository settings before running workflows.
+- **build-and-test.yml**: Runs unit tests and linting for Python scripts using `pytest` and `flake8`. No secrets required.  
+- **deploy.yml**: Deploys Jenkins job configurations to the target server using `jjb-builder.py`. Requires `DEPLOY_KEY` secret for SSH authentication.  
+- **codeql-analysis.yml**: Performs static code analysis using GitHub's CodeQL. No secrets required.  
+- **generate-config.yml**: Executes `generate.sh` to create configuration files from templates. No secrets required.  
+- **artifact-upload.yml**: Builds artifacts and uploads them to GitHub Releases. Requires `GH_TOKEN` secret for authentication.  
 <!-- AI:end:ci -->
 
 ## Mirror chain
@@ -85,11 +75,11 @@ Direct commits to OSP or OOC are detected and opened as PRs back to `Interested-
 
 <!-- AI:start:contributors -->
 [@maxyz](https://github.com/maxyz): 340 commits  
-[@Interested-Deving-1896](https://github.com/Interested-Deving-1896): 38 commits  
+[@Interested-Deving-1896](https://github.com/Interested-Deving-1896): 59 commits  
 [@hefee](https://github.com/hefee): 24 commits  
 [@marga-personal](https://github.com/marga-personal): 2 commits  
 
-*Note: This repository is a mirror. Please refer to the upstream source for additional contributions and context.*
+*Note: This repository may be a mirror. Please refer to the upstream source for additional contributions.*
 <!-- AI:end:contributors -->
 
 ## Origins

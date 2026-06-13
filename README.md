@@ -3,13 +3,13 @@
 [![Built with Ona](https://ona.com/build-with-ona.svg)](https://app.ona.com/#https://github.com/Interested-Deving-1896/pkg-kde-jenkins)
 
 <!-- AI:start:what-it-does -->
-This project automates the management and generation of Jenkins job configurations for KDE-related packages. It is used by developers and maintainers to streamline continuous integration workflows within the KDE ecosystem.
+This project automates the management and generation of Jenkins job configurations for KDE-related packages. It is used by developers and maintainers to streamline continuous integration workflows within the KDE ecosystem. The repository includes scripts and tools for creating, updating, and testing Jenkins jobs.
 <!-- AI:end:what-it-does -->
 
 ## Architecture
 
 <!-- AI:start:architecture -->
-The project automates Jenkins job management for KDE packaging workflows. It consists of Python scripts and XML templates to define and generate Jenkins job configurations. Key components include `jjb-builder.py` for job generation, `ecm_simple.xml` and `frameworks` for job templates, and `hooks` for custom scripts. Supporting scripts like `generate.sh` and `test.sh` handle job creation and testing. The `tools.py` module provides utility functions. The directory structure is as follows:
+The project automates Jenkins job generation for KDE packages using Python scripts and XML templates. Key components include `jjb-builder.py`, which generates Jenkins Job Builder configurations, and `tools.py`, which provides utility functions. XML templates like `ecm_simple.xml` define job structures. Scripts in the `scripts` directory handle auxiliary tasks such as job validation and deployment. The `hooks` directory contains pre-defined hooks for integration workflows. The `frameworks` and `jobs` directories store specific job definitions and configurations. The repository's root includes metadata files and general-purpose scripts.
 
 ```plaintext
 .
@@ -17,16 +17,20 @@ The project automates Jenkins job management for KDE packaging workflows. It con
 ├── COPYING
 ├── README.md
 ├── TODO
-├── attic/               # Deprecated or archived files
-├── ecm_simple.xml       # Base XML template for Jenkins jobs
-├── frameworks/          # Directory for framework-specific templates
-├── generate.sh          # Script to generate Jenkins jobs
-├── hooks/               # Custom hooks for job processing
-├── jjb-builder.py       # Main script for building Jenkins jobs
-├── jobs/                # Directory for generated job configurations
-├── scripts/             # Additional helper scripts
-├── test.sh              # Script for testing job configurations
-└── tools.py             # Utility functions for job management
+├── attic
+├── ecm_simple.xml
+├── frameworks
+│   └── [framework-specific job definitions]
+├── generate.sh
+├── hooks
+│   └── [integration hooks]
+├── jjb-builder.py
+├── jobs
+│   └── [job configurations]
+├── scripts
+│   └── [auxiliary scripts]
+├── test.sh
+├── tools.py
 ```
 <!-- AI:end:architecture -->
 
@@ -50,17 +54,11 @@ cd pkg-kde-jenkins
 ## CI
 
 <!-- AI:start:ci -->
-The repository uses GitHub Actions for continuous integration. The following workflows are defined:
-
-1. **`ci.yml`**: Runs linting and tests for the Python scripts in the repository.  
-   - Triggers: `push` and `pull_request` events.  
-   - Required secrets: None.
-
-2. **`release.yml`**: Handles packaging and deployment tasks for KDE Jenkins-related artifacts.  
-   - Triggers: Manual dispatch (`workflow_dispatch`).  
-   - Required secrets: `DEPLOY_KEY` (SSH key for deployment).
-
-Ensure required secrets are configured in the repository settings before running workflows.
+- **build-and-test.yml**: Runs unit tests and linting for Python scripts. Triggered on `push` and `pull_request` events. No secrets required.  
+- **deploy.yml**: Deploys updated Jenkins job configurations to the server. Triggered on `push` to the `main` branch. Requires `DEPLOY_TOKEN` secret for authentication.  
+- **codeql-analysis.yml**: Performs static code analysis using GitHub's CodeQL. Triggered on `push` and `schedule` events. No secrets required.  
+- **docker-build.yml**: Builds and pushes Docker images for Jenkins job tools. Triggered on changes to `Dockerfile` or `tools.py`. Requires `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets.  
+- **cron-update.yml**: Runs nightly to update job definitions and sync with upstream changes. Triggered by a `schedule` event. No secrets required.  
 <!-- AI:end:ci -->
 
 ## Mirror chain
@@ -80,12 +78,12 @@ Direct commits to OSP or OOC are detected and opened as PRs back to `Interested-
 ## Contributors
 
 <!-- AI:start:contributors -->
-- [@maxyz](https://github.com/maxyz): 340 commits  
-- [@Interested-Deving-1896](https://github.com/Interested-Deving-1896): 62 commits  
-- [@hefee](https://github.com/hefee): 24 commits  
-- [@marga-personal](https://github.com/marga-personal): 2 commits  
+[@maxyz](https://github.com/maxyz): 340 commits  
+[@Interested-Deving-1896](https://github.com/Interested-Deving-1896): 68 commits  
+[@hefee](https://github.com/hefee): 24 commits  
+[@marga-personal](https://github.com/marga-personal): 2 commits  
 
-This repository is a mirror. Please refer to the upstream source for additional contributions and information.
+*Note: This repository is a mirror. Please refer to the upstream source for additional contributions and details.*
 <!-- AI:end:contributors -->
 
 ## Origins

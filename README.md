@@ -4,13 +4,13 @@
 [![Built with Ona](https://ona.com/build-with-ona.svg)](https://app.ona.com/#https://github.com/Interested-Deving-1896/pkg-kde-jenkins)
 
 <!-- AI:start:what-it-does -->
-This project automates the creation and management of Jenkins jobs for KDE-related packaging workflows. It provides tools and scripts to streamline CI/CD processes for developers and maintainers working on KDE projects.
+This project provides tools and scripts for managing Jenkins jobs related to KDE packaging workflows. It automates the creation, configuration, and maintenance of Jenkins pipelines, streamlining CI/CD processes for KDE developers and maintainers.
 <!-- AI:end:what-it-does -->
 
 ## Architecture
 
 <!-- AI:start:architecture -->
-The project is a Python-based infrastructure for managing Jenkins jobs related to KDE packaging. It includes scripts, templates, and tools for job generation and automation. Key components include `jjb-builder.py` for Jenkins Job Builder integration, `generate.sh` for job generation, and `tools.py` for utility functions. XML templates like `ecm_simple.xml` define job configurations. The `hooks` directory contains scripts for pre/post-processing, while `jobs` holds job definitions. The `scripts` directory includes auxiliary scripts, and `attic` stores deprecated or unused files. The directory structure is as follows:
+The project automates Jenkins job generation and management for KDE packages. It consists of Python scripts and XML templates to define and build Jenkins jobs. Key components include `jjb-builder.py` for job generation, `ecm_simple.xml` as a base template, and the `jobs/` directory for job definitions. Supporting scripts in `scripts/` and `hooks/` handle auxiliary tasks like testing and deployment. The `tools.py` module provides shared utilities. The repository structure is as follows:
 
 ```plaintext
 .
@@ -18,16 +18,16 @@ The project is a Python-based infrastructure for managing Jenkins jobs related t
 ├── COPYING
 ├── README.md
 ├── TODO
-├── attic
-├── ecm_simple.xml
-├── frameworks
-├── generate.sh
-├── hooks
-├── jjb-builder.py
-├── jobs
-├── scripts
-├── test.sh
-├── tools.py
+├── attic/               # Deprecated or archived files
+├── ecm_simple.xml       # Base Jenkins job template
+├── frameworks/          # Framework-specific configurations
+├── generate.sh          # Script to trigger job generation
+├── hooks/               # Hook scripts for integration
+├── jjb-builder.py       # Main job builder script
+├── jobs/                # Jenkins job definitions
+├── scripts/             # Auxiliary scripts
+├── test.sh              # Test script for validation
+├── tools.py             # Shared utility functions
 ```
 <!-- AI:end:architecture -->
 

@@ -4,13 +4,13 @@
 [![Built with Ona](https://ona.com/build-with-ona.svg)](https://app.ona.com/#https://github.com/Interested-Deving-1896/pkg-kde-jenkins)
 
 <!-- AI:start:what-it-does -->
-This project provides tools and scripts for managing Jenkins jobs related to KDE packaging workflows. It automates the creation, configuration, and maintenance of Jenkins pipelines, streamlining CI/CD processes for KDE developers and maintainers.
+This project automates the generation and management of Jenkins job configurations for KDE-related packages. It is used by developers and maintainers to streamline continuous integration workflows within the KDE ecosystem. The repository includes scripts and tools for creating, updating, and testing Jenkins jobs.
 <!-- AI:end:what-it-does -->
 
 ## Architecture
 
 <!-- AI:start:architecture -->
-The project automates Jenkins job generation and management for KDE packages. It consists of Python scripts and XML templates to define and build Jenkins jobs. Key components include `jjb-builder.py` for job generation, `ecm_simple.xml` as a base template, and the `jobs/` directory for job definitions. Supporting scripts in `scripts/` and `hooks/` handle auxiliary tasks like testing and deployment. The `tools.py` module provides shared utilities. The repository structure is as follows:
+The project is a Python-based system for managing Jenkins jobs related to KDE packaging. It consists of scripts and configuration files for job generation, testing, and deployment. Key components include `jjb-builder.py` for Jenkins Job Builder integration, `generate.sh` for job generation, and `tools.py` for utility functions. The `hooks` directory contains custom hooks, while `jobs` defines job templates. The `scripts` directory includes auxiliary scripts, and `attic` stores deprecated or archived files. The `ecm_simple.xml` file provides an example configuration for ECM-based projects. The directory structure is as follows:
 
 ```plaintext
 .
@@ -18,16 +18,16 @@ The project automates Jenkins job generation and management for KDE packages. It
 ├── COPYING
 ├── README.md
 ├── TODO
-├── attic/               # Deprecated or archived files
-├── ecm_simple.xml       # Base Jenkins job template
-├── frameworks/          # Framework-specific configurations
-├── generate.sh          # Script to trigger job generation
-├── hooks/               # Hook scripts for integration
-├── jjb-builder.py       # Main job builder script
-├── jobs/                # Jenkins job definitions
-├── scripts/             # Auxiliary scripts
-├── test.sh              # Test script for validation
-├── tools.py             # Shared utility functions
+├── attic/
+├── ecm_simple.xml
+├── frameworks/
+├── generate.sh
+├── hooks/
+├── jjb-builder.py
+├── jobs/
+├── scripts/
+├── test.sh
+├── tools.py
 ```
 <!-- AI:end:architecture -->
 
@@ -53,13 +53,11 @@ cd pkg-kde-jenkins
 <!-- AI:start:ci -->
 The repository uses GitHub Actions for continuous integration. The following workflows are defined:
 
-1. **`ci.yml`**: Runs linting and tests for the Python scripts in the repository.  
-   - Triggers: `push` and `pull_request` events.  
-   - Required secrets: None.
+1. **`ci.yml`**: Runs tests and linting for the project. It triggers on push and pull request events. No secrets are required.
 
-2. **`release.yml`**: Builds and packages the project for release.  
-   - Triggers: Manual dispatch (`workflow_dispatch`).  
-   - Required secrets: `GITHUB_TOKEN` (provided by default).
+2. **`release.yml`**: Builds and publishes a release artifact. It triggers on tag creation. Requires the `GITHUB_TOKEN` secret for authentication.
+
+3. **`docker-build.yml`**: Builds and pushes a Docker image. It triggers on changes to the `main` branch. Requires the `DOCKER_USERNAME` and `DOCKER_PASSWORD` secrets for Docker Hub authentication.
 
 Ensure all required secrets are configured in the repository settings before running workflows.
 <!-- AI:end:ci -->

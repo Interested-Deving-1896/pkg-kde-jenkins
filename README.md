@@ -10,7 +10,7 @@ This project provides tools and scripts for managing Jenkins jobs related to KDE
 ## Architecture
 
 <!-- AI:start:architecture -->
-This project automates Jenkins job generation for KDE packages. The architecture consists of Python scripts and XML templates that define and manage Jenkins jobs. Key components include `jjb-builder.py` for job creation, `generate.sh` for script execution, and `tools.py` for utility functions. The `jobs` directory contains job definitions, while `hooks` provides integration scripts. XML templates like `ecm_simple.xml` define job configurations. Supporting scripts and tests are in `scripts` and `test.sh`, respectively. The directory structure is as follows:
+The project consists of several components designed to manage and automate Jenkins job configurations for KDE packages. Key components include `jjb-builder.py`, which handles Jenkins Job Builder (JJB) configuration generation, and `tools.py`, which provides utility functions. The `generate.sh` script automates the generation process, while the `hooks` and `jobs` directories store custom hooks and job definitions, respectively. The `frameworks` directory contains configuration templates for KDE frameworks. Supporting scripts and test utilities are located in `scripts` and `test.sh`. The `ecm_simple.xml` file provides a base XML template for job definitions. The directory structure is as follows:
 
 ```plaintext
 .
@@ -79,12 +79,12 @@ Direct commits to OSP or OOC are detected and opened as PRs back to `Interested-
 ## Contributors
 
 <!-- AI:start:contributors -->
-- [@maxyz](https://github.com/maxyz): 340 commits  
-- [@Interested-Deving-1896](https://github.com/Interested-Deving-1896): 92 commits  
-- [@hefee](https://github.com/hefee): 24 commits  
-- [@marga-personal](https://github.com/marga-personal): 2 commits  
+[@maxyz](https://github.com/maxyz) - 340 commits  
+[@Interested-Deving-1896](https://github.com/Interested-Deving-1896) - 93 commits  
+[@hefee](https://github.com/hefee) - 24 commits  
+[@marga-personal](https://github.com/marga-personal) - 2 commits  
 
-This repository is a mirror. Please refer to the upstream source for additional contributions and details.
+*Note: This repository is a mirror. Please refer to the upstream source for additional contributions and updates.*
 <!-- AI:end:contributors -->
 
 ## Origins

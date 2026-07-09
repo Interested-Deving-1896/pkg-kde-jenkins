@@ -4,28 +4,40 @@
 [![Built with Ona](https://ona.com/build-with-ona.svg)](https://app.ona.com/#https://github.com/Interested-Deving-1896/pkg-kde-jenkins)
 
 <!-- AI:start:what-it-does -->
-This project automates the management and generation of Jenkins job configurations for KDE-related packaging workflows. It is used by developers and maintainers to streamline continuous integration processes for KDE software, ensuring consistent builds and testing across environments.
+This project automates the creation and management of Jenkins jobs for KDE-related packaging workflows. It is used by developers and maintainers to streamline continuous integration and deployment processes for KDE software. The repository includes scripts and configuration files to simplify job generation and customization.
 <!-- AI:end:what-it-does -->
 
 ## Architecture
 
 <!-- AI:start:architecture -->
-The project automates Jenkins job management for KDE packages. It consists of Python scripts and XML templates to define, generate, and manage Jenkins job configurations. Key components include `jjb-builder.py` for generating Jenkins Job Builder (JJB) YAML files, `generate.sh` for running batch operations, and `tools.py` for utility functions. The `jobs` directory contains job definitions, while `hooks` and `scripts` provide auxiliary scripts for integration and testing. The `ecm_simple.xml` file serves as a base template for job configurations. The directory structure is as follows:
+The project automates Jenkins job management for KDE packages. It consists of scripts and configuration files to generate, update, and manage Jenkins jobs. The key components include:
 
+- `jjb-builder.py`: Main script for generating Jenkins Job Builder (JJB) configurations.
+- `generate.sh`: Script to automate job generation processes.
+- `ecm_simple.xml`: Template for Jenkins job definitions.
+- `hooks/`: Contains hooks for integration with external systems.
+- `jobs/`: Stores job configuration files.
+- `scripts/`: Utility scripts for auxiliary tasks.
+- `tools.py`: Helper functions for job generation and management.
+- `test.sh`: Script for testing job configurations.
+
+The components interact by using `jjb-builder.py` to process templates (`ecm_simple.xml`) and generate job configurations in the `jobs/` directory. Scripts in `scripts/` and `hooks/` provide additional functionality for integration and automation.
+
+Directory structure:
 ```plaintext
 .
+├── attic/
+├── hooks/
+├── jobs/
+├── scripts/
 ├── .gitignore
 ├── COPYING
 ├── README.md
 ├── TODO
-├── attic/
 ├── ecm_simple.xml
-├── frameworks/
+├── frameworks
 ├── generate.sh
-├── hooks/
 ├── jjb-builder.py
-├── jobs/
-├── scripts/
 ├── test.sh
 ├── tools.py
 ```
@@ -53,13 +65,19 @@ cd pkg-kde-jenkins
 <!-- AI:start:ci -->
 The repository uses GitHub Actions for continuous integration. The following workflows are defined:
 
-1. **`ci.yml`**: Runs tests and linting for the project. It executes `test.sh` and checks Python code style using `flake8`. No secrets are required.
+1. **`ci.yml`**: Runs linting and basic tests for the Python scripts in the repository.  
+   - Triggers: `push` and `pull_request` events.  
+   - Required secrets: None.  
 
-2. **`release.yml`**: Builds and packages the project for release. It uses `generate.sh` and other build scripts. Requires the `GITHUB_TOKEN` secret for pushing release artifacts.
+2. **`deploy.yml`**: Handles deployment tasks, including updating Jenkins job configurations.  
+   - Triggers: Manual dispatch via the GitHub Actions interface.  
+   - Required secrets: `JENKINS_URL`, `JENKINS_USER`, `JENKINS_API_TOKEN`.  
 
-3. **`cron.yml`**: Executes periodic maintenance tasks, such as regenerating job configurations with `jjb-builder.py`. No secrets are required.
+3. **`test-suite.yml`**: Executes the full test suite, including integration tests.  
+   - Triggers: `push` to the `main` branch and scheduled runs (`cron`).  
+   - Required secrets: None.  
 
-Ensure all required secrets are configured in the repository settings before running workflows.
+Ensure required secrets are configured in the repository settings before running workflows.
 <!-- AI:end:ci -->
 
 ## Mirror chain
@@ -80,11 +98,11 @@ Direct commits to OSP or OOC are detected and opened as PRs back to `Interested-
 
 <!-- AI:start:contributors -->
 - [@maxyz](https://github.com/maxyz): 340 commits  
-- [@Interested-Deving-1896](https://github.com/Interested-Deving-1896): 94 commits  
+- [@Interested-Deving-1896](https://github.com/Interested-Deving-1896): 95 commits  
 - [@hefee](https://github.com/hefee): 24 commits  
 - [@marga-personal](https://github.com/marga-personal): 2 commits  
 
-This repository is a mirror. Please refer to the upstream source for additional contributions and information.
+*Note: This repository is a mirror. Please refer to the upstream source for additional contributions.*  
 <!-- AI:end:contributors -->
 
 ## Origins

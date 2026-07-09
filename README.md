@@ -4,13 +4,13 @@
 [![Built with Ona](https://ona.com/build-with-ona.svg)](https://app.ona.com/#https://github.com/Interested-Deving-1896/pkg-kde-jenkins)
 
 <!-- AI:start:what-it-does -->
-This project provides tools and scripts for managing Jenkins jobs related to KDE packaging and development workflows. It automates the creation, configuration, and maintenance of Jenkins pipelines, streamlining CI/CD processes for KDE developers and maintainers.
+This project automates the management and generation of Jenkins job configurations for KDE-related packaging workflows. It is used by developers and maintainers to streamline continuous integration processes for KDE software, ensuring consistent builds and testing across environments.
 <!-- AI:end:what-it-does -->
 
 ## Architecture
 
 <!-- AI:start:architecture -->
-The project consists of several components designed to manage and automate Jenkins job configurations for KDE packages. Key components include `jjb-builder.py`, which handles Jenkins Job Builder (JJB) configuration generation, and `tools.py`, which provides utility functions. The `generate.sh` script automates the generation process, while the `hooks` and `jobs` directories store custom hooks and job definitions, respectively. The `frameworks` directory contains configuration templates for KDE frameworks. Supporting scripts and test utilities are located in `scripts` and `test.sh`. The `ecm_simple.xml` file provides a base XML template for job definitions. The directory structure is as follows:
+The project automates Jenkins job management for KDE packages. It consists of Python scripts and XML templates to define, generate, and manage Jenkins job configurations. Key components include `jjb-builder.py` for generating Jenkins Job Builder (JJB) YAML files, `generate.sh` for running batch operations, and `tools.py` for utility functions. The `jobs` directory contains job definitions, while `hooks` and `scripts` provide auxiliary scripts for integration and testing. The `ecm_simple.xml` file serves as a base template for job configurations. The directory structure is as follows:
 
 ```plaintext
 .
@@ -53,13 +53,13 @@ cd pkg-kde-jenkins
 <!-- AI:start:ci -->
 The repository uses GitHub Actions for continuous integration. The following workflows are defined:
 
-1. **`ci.yml`**: Runs tests and linting for the Python scripts in the repository. It triggers on pushes and pull requests. No secrets are required.
+1. **`ci.yml`**: Runs tests and linting for the project. It executes `test.sh` and checks Python code style using `flake8`. No secrets are required.
 
-2. **`release.yml`**: Builds and packages the project for release. It triggers on creating a new tag. Requires the `GITHUB_TOKEN` secret for authentication.
+2. **`release.yml`**: Builds and packages the project for release. It uses `generate.sh` and other build scripts. Requires the `GITHUB_TOKEN` secret for pushing release artifacts.
 
-3. **`cron.yml`**: Executes periodic maintenance tasks, such as cleaning up temporary files and verifying job configurations. It runs on a daily schedule. No secrets are required.
+3. **`cron.yml`**: Executes periodic maintenance tasks, such as regenerating job configurations with `jjb-builder.py`. No secrets are required.
 
-Ensure required secrets are configured in the repository settings before triggering workflows.
+Ensure all required secrets are configured in the repository settings before running workflows.
 <!-- AI:end:ci -->
 
 ## Mirror chain
@@ -79,12 +79,12 @@ Direct commits to OSP or OOC are detected and opened as PRs back to `Interested-
 ## Contributors
 
 <!-- AI:start:contributors -->
-[@maxyz](https://github.com/maxyz) - 340 commits  
-[@Interested-Deving-1896](https://github.com/Interested-Deving-1896) - 93 commits  
-[@hefee](https://github.com/hefee) - 24 commits  
-[@marga-personal](https://github.com/marga-personal) - 2 commits  
+- [@maxyz](https://github.com/maxyz): 340 commits  
+- [@Interested-Deving-1896](https://github.com/Interested-Deving-1896): 94 commits  
+- [@hefee](https://github.com/hefee): 24 commits  
+- [@marga-personal](https://github.com/marga-personal): 2 commits  
 
-*Note: This repository is a mirror. Please refer to the upstream source for additional contributions and updates.*
+This repository is a mirror. Please refer to the upstream source for additional contributions and information.
 <!-- AI:end:contributors -->
 
 ## Origins

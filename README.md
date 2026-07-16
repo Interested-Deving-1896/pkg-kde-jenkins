@@ -135,5 +135,5 @@ See [DOCS/accessibility.md](https://github.com/Interested-Deving-1896/pkg-kde-je
 ## License
 
 <!-- AI:start:license -->
-<!-- License not detected — add a LICENSE file to this repo. -->
+[GPL-2.0](https://github.com/Interested-Deving-1896/pkg-kde-jenkins/blob/master/COPYING) © 2026 [Interested-Deving-1896](https://github.com/Interested-Deving-1896)
 <!-- AI:end:license -->

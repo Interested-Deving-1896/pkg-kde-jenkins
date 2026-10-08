@@ -99,12 +99,12 @@ Direct commits to OSP or OOC are detected and opened as PRs back to `Interested-
 ## Contributors
 
 <!-- AI:start:contributors -->
-- [@maxyz](https://github.com/maxyz): 340 commits
-- [@Interested-Deving-1896](https://github.com/Interested-Deving-1896): 95 commits
-- [@hefee](https://github.com/hefee): 24 commits
-- [@marga-personal](https://github.com/marga-personal): 2 commits
-
-*Note: This repository is a mirror. Please refer to the upstream source for additional contributions.*
+| Contributor | Commits |
+|---|---|
+| [@maxyz](https://github.com/maxyz) | 340 |
+| [@Interested-Deving-1896](https://github.com/Interested-Deving-1896) | 112 |
+| [@hefee](https://github.com/hefee) | 24 |
+| [@marga-personal](https://github.com/marga-personal) | 2 |
 <!-- AI:end:contributors -->
 
 ## Origins

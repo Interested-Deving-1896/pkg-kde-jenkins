@@ -102,7 +102,7 @@ Direct commits to OSP or OOC are detected and opened as PRs back to `Interested-
 | Contributor | Commits |
 |---|---|
 | [@maxyz](https://github.com/maxyz) | 340 |
-| [@Interested-Deving-1896](https://github.com/Interested-Deving-1896) | 112 |
+| [@Interested-Deving-1896](https://github.com/Interested-Deving-1896) | 130 |
 | [@hefee](https://github.com/hefee) | 24 |
 | [@marga-personal](https://github.com/marga-personal) | 2 |
 <!-- AI:end:contributors -->
@@ -139,5 +139,5 @@ for the underlying accessibility reference.
 ## License
 
 <!-- AI:start:license -->
-[GPL-2.0](https://github.com/Interested-Deving-1896/pkg-kde-jenkins/blob/master/COPYING) © 2026 [Interested-Deving-1896](https://github.com/Interested-Deving-1896)
+[GPL-3.0](https://github.com/Interested-Deving-1896/pkg-kde-jenkins/blob/master/LICENSE) © 2026 [Interested-Deving-1896](https://github.com/Interested-Deving-1896)
 <!-- AI:end:license -->

@@ -89,7 +89,7 @@ jobs:
           PYEOF
 
       - name: Harden runner
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # ratchet:step-security/harden-runner@v2
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # ratchet:step-security/harden-runner@v2
         with:
           egress-policy: audit
           disable-sudo: false
@@ -132,7 +132,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # ratchet:step-security/harden-runner@v2
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # ratchet:step-security/harden-runner@v2
         with:
           egress-policy: audit
           disable-sudo: false
